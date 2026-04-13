@@ -7,6 +7,7 @@ import {
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../../services/firebase';
 import { Embalagem } from '../../types';
+import { comprimirImagem } from '../../utils/imageUtils';
 
 export default function AdminEstoque() {
   const [embalagens, setEmbalagens] = useState<Embalagem[]>([]);
@@ -122,9 +123,11 @@ export default function AdminEstoque() {
           await uploadBytes(storageRef, foto);
           fotoUrl = await getDownloadURL(storageRef);
         } catch {
-          // Fallback: salvar como base64 no Firestore
-          if (fotoPreview) {
-            fotoUrl = fotoPreview;
+          // Fallback: comprimir e salvar como base64 no Firestore
+          try {
+            fotoUrl = await comprimirImagem(foto, 400, 400, 0.5);
+          } catch {
+            // Se nem comprimir funcionar, ignorar a foto
           }
         }
       }

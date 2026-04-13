@@ -5,7 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Plus, Search, X, User, Package, Pencil, Check, Trash2, ArrowRight } from 'lucide-react';
 import { Barraca, Embalagem, Vinculo } from '../../types';
 import {
-  collection, onSnapshot, addDoc, deleteDoc, doc, query, where, serverTimestamp
+  collection, onSnapshot, addDoc, deleteDoc, doc, serverTimestamp
 } from 'firebase/firestore';
 import { db } from '../../services/firebase';
 
@@ -55,24 +55,30 @@ export default function AdminBarracas() {
       setVinculos([]);
       return;
     }
-    const q = query(
+    // Usar listener simples na coleção inteira e filtrar no cliente
+    // (evita necessidade de índice composto no Firestore)
+    const unsub = onSnapshot(
       collection(db, 'vinculos'),
-      where('barracaId', '==', barracaEmbalagens.id)
+      (snap) => {
+        const todos = snap.docs.map(d => ({
+          id: d.id,
+          ...d.data(),
+          criadoEm: d.data().criadoEm?.toDate?.() ?? new Date(),
+          atualizadoEm: d.data().atualizadoEm?.toDate?.() ?? new Date(),
+        })) as Vinculo[];
+        // Filtrar pelo barracaId no cliente
+        const lista = todos.filter(v => v.barracaId === barracaEmbalagens.id);
+        // Enrich with embalagem name
+        const enriched = lista.map(v => {
+          const emb = embalagens.find(e => e.id === v.embalagemId);
+          return { ...v, embalagemNome: emb?.nome ?? 'Embalagem removida' };
+        });
+        setVinculos(enriched);
+      },
+      (err) => {
+        console.error('Erro ao carregar vínculos:', err);
+      }
     );
-    const unsub = onSnapshot(q, (snap) => {
-      const lista = snap.docs.map(d => ({
-        id: d.id,
-        ...d.data(),
-        criadoEm: d.data().criadoEm?.toDate?.() ?? new Date(),
-        atualizadoEm: d.data().atualizadoEm?.toDate?.() ?? new Date(),
-      })) as Vinculo[];
-      // Enrich with embalagem name
-      const enriched = lista.map(v => {
-        const emb = embalagens.find(e => e.id === v.embalagemId);
-        return { ...v, embalagemNome: emb?.nome ?? 'Embalagem removida' };
-      });
-      setVinculos(enriched);
-    }, () => {});
     return () => unsub();
   }, [barracaEmbalagens, embalagens]);
 

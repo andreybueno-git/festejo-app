@@ -6,6 +6,7 @@ import { Key, Calendar, Bell, Users, RefreshCw, Check, Copy, LogOut, MessageCirc
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { doc, setDoc } from 'firebase/firestore';
 import { storage, db } from '../../services/firebase';
+import { comprimirImagem } from '../../utils/imageUtils';
 
 export default function AdminConfig() {
   const { codigoAcesso, atualizarCodigoAcesso, deslogarTodasBarracas, logout, fotoFundo } = useAuth();
@@ -68,9 +69,17 @@ export default function AdminConfig() {
   const uploadFoto = async (file: File) => {
     setUploadingFoto(true);
     try {
-      const storageRef = ref(storage, `config/fundo_${Date.now()}_${file.name}`);
-      await uploadBytes(storageRef, file);
-      const url = await getDownloadURL(storageRef);
+      let url: string;
+
+      try {
+        // Tentar Firebase Storage
+        const storageRef = ref(storage, `config/fundo_${Date.now()}_${file.name}`);
+        await uploadBytes(storageRef, file);
+        url = await getDownloadURL(storageRef);
+      } catch {
+        // Fallback: comprimir e salvar como base64
+        url = await comprimirImagem(file, 600, 600, 0.5);
+      }
 
       await setDoc(doc(db, 'config', 'geral'), {
         fotoFundo: url
