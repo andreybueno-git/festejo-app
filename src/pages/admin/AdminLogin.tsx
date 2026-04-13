@@ -9,8 +9,8 @@ export default function AdminLogin() {
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [erro, setErro] = useState('');
   const [loading, setLoading] = useState(false);
-  
-  const { loginAdmin } = useAuth();
+
+  const { loginAdmin, fotoFundo } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -34,15 +34,41 @@ export default function AdminLogin() {
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden">
-      {/* Ambient lights */}
-      <div className="ambient-light-top" />
-      <div className="ambient-light-bottom" />
-      
+      {/* Foto de fundo */}
+      {fotoFundo ? (
+        <>
+          <div
+            className="absolute inset-0 z-0"
+            style={{
+              backgroundImage: `url(${fotoFundo})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
+            }}
+          />
+          {/* Overlay escuro */}
+          <div className="absolute inset-0 z-0 bg-black/60" />
+          {/* Blur suave na parte do formulário */}
+          <div
+            className="absolute inset-0 z-0"
+            style={{
+              background: 'linear-gradient(to top, rgba(10,22,40,0.95) 0%, rgba(10,22,40,0.4) 40%, transparent 70%)',
+            }}
+          />
+        </>
+      ) : (
+        <>
+          {/* Ambient lights (fallback quando não tem foto) */}
+          <div className="ambient-light-top" />
+          <div className="ambient-light-bottom" />
+        </>
+      )}
+
       {/* Content */}
       <main className="flex-1 flex flex-col items-center justify-center px-6 relative z-10">
         {/* Logo/Icon */}
         <div className="mb-8 text-center">
-          <div 
+          <div
             className="w-24 h-24 mx-auto mb-4 rounded-[28px] flex items-center justify-center"
             style={{
               background: 'linear-gradient(145deg, rgba(255,255,255,0.15), rgba(255,255,255,0.05))',

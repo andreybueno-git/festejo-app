@@ -36,6 +36,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [loading, setLoading] = useState(true);
   const [senhaAdmin, setSenhaAdmin] = useState(DEFAULT_SENHA_ADMIN);
   const [codigoAcesso, setCodigoAcesso] = useState(DEFAULT_CODIGO_ACESSO);
+  const [fotoFundo, setFotoFundo] = useState('');
 
   useEffect(() => {
     // Restaurar sessão salva
@@ -75,6 +76,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           const data = snap.data();
           if (data.senhaAdmin) setSenhaAdmin(data.senhaAdmin);
           if (data.codigoAcesso) setCodigoAcesso(data.codigoAcesso);
+          if (data.fotoFundo !== undefined) setFotoFundo(data.fotoFundo);
         } else {
           // Criar doc de config padrão na primeira execução
           try {
@@ -208,6 +210,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     deslogarTodasBarracas,
     adicionarBarraca,
     editarBarraca,
+    fotoFundo,
   };
 
   return (

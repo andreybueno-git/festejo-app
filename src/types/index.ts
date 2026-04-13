@@ -109,6 +109,7 @@ export interface AuthContextType {
   deslogarTodasBarracas: () => Promise<void>;
   adicionarBarraca: (nome: string, icone: string) => Promise<boolean>;
   editarBarraca: (id: string, dados: Partial<Barraca>) => Promise<boolean>;
+  fotoFundo: string;
 }
 
 // Versículo

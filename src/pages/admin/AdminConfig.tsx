@@ -1,15 +1,21 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Layout, GlassCard } from '../../components';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Key, Calendar, Bell, Users, RefreshCw, Check, Copy, LogOut, MessageCircle } from 'lucide-react';
+import { Key, Calendar, Bell, Users, RefreshCw, Check, Copy, LogOut, MessageCircle, Image, X, Trash2 } from 'lucide-react';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { doc, setDoc } from 'firebase/firestore';
+import { storage, db } from '../../services/firebase';
 
 export default function AdminConfig() {
-  const { codigoAcesso, atualizarCodigoAcesso, deslogarTodasBarracas, logout } = useAuth();
+  const { codigoAcesso, atualizarCodigoAcesso, deslogarTodasBarracas, logout, fotoFundo } = useAuth();
   const navigate = useNavigate();
   const [novoCodigo, setNovoCodigo] = useState('');
   const [salvando, setSalvando] = useState(false);
   const [copiado, setCopiado] = useState(false);
+  const [uploadingFoto, setUploadingFoto] = useState(false);
+  const [fotoPreview, setFotoPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [config, setConfig] = useState({
     nomeFestejo: 'Festejo Paróquia São José 2026',
@@ -46,6 +52,52 @@ export default function AdminConfig() {
     navigate('/');
   };
 
+  const handleFotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Preview
+    const reader = new FileReader();
+    reader.onload = (ev) => setFotoPreview(ev.target?.result as string);
+    reader.readAsDataURL(file);
+
+    // Upload
+    uploadFoto(file);
+  };
+
+  const uploadFoto = async (file: File) => {
+    setUploadingFoto(true);
+    try {
+      const storageRef = ref(storage, `config/fundo_${Date.now()}_${file.name}`);
+      await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(storageRef);
+
+      await setDoc(doc(db, 'config', 'geral'), {
+        fotoFundo: url
+      }, { merge: true });
+
+      setFotoPreview(null);
+    } catch (err) {
+      console.error('Erro ao enviar foto:', err);
+    } finally {
+      setUploadingFoto(false);
+    }
+  };
+
+  const removerFoto = async () => {
+    setUploadingFoto(true);
+    try {
+      await setDoc(doc(db, 'config', 'geral'), {
+        fotoFundo: ''
+      }, { merge: true });
+      setFotoPreview(null);
+    } catch (err) {
+      console.error('Erro ao remover foto:', err);
+    } finally {
+      setUploadingFoto(false);
+    }
+  };
+
   return (
     <Layout tipo="admin" showNav>
       <div className="page-content">
@@ -56,8 +108,83 @@ export default function AdminConfig() {
         </div>
 
         <div className="space-y-4">
-          {/* Código de Acesso */}
+
+          {/* Foto de Fundo */}
           <GlassCard className="p-5" highlight>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center">
+                <Image size={20} className="text-indigo-400" />
+              </div>
+              <div>
+                <p className="text-white font-medium">Foto de Fundo</p>
+                <p className="text-white/50 text-xs">Imagem exibida na tela de login</p>
+              </div>
+            </div>
+
+            {/* Preview da foto atual */}
+            {(fotoFundo || fotoPreview) ? (
+              <div className="relative rounded-xl overflow-hidden mb-4">
+                <img
+                  src={fotoPreview || fotoFundo}
+                  alt="Fundo do app"
+                  className="w-full h-40 object-cover"
+                />
+                {/* Overlay para simular como fica no login */}
+                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                  <div className="text-center">
+                    <span className="text-3xl">⛪</span>
+                    <p className="text-white text-sm font-medium mt-1">Festejo App</p>
+                  </div>
+                </div>
+                {uploadingFoto && (
+                  <div className="absolute inset-0 bg-black/70 flex items-center justify-center">
+                    <RefreshCw size={24} className="text-white animate-spin" />
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="rounded-xl border border-dashed border-white/20 h-32 flex items-center justify-center mb-4">
+                <div className="text-center">
+                  <Image size={24} className="mx-auto text-white/20 mb-2" />
+                  <p className="text-white/30 text-xs">Nenhuma foto definida</p>
+                </div>
+              </div>
+            )}
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFotoSelect}
+              className="hidden"
+            />
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingFoto}
+                className="flex-1 py-2.5 rounded-xl bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 text-sm font-medium hover:bg-indigo-500/30 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {uploadingFoto ? (
+                  <><RefreshCw size={16} className="animate-spin" /> Enviando...</>
+                ) : (
+                  <><Image size={16} /> {fotoFundo ? 'Trocar foto' : 'Escolher foto'}</>
+                )}
+              </button>
+              {fotoFundo && (
+                <button
+                  onClick={removerFoto}
+                  disabled={uploadingFoto}
+                  className="px-4 py-2.5 rounded-xl bg-red-500/20 border border-red-500/30 text-red-300 hover:bg-red-500/30 transition-colors disabled:opacity-50"
+                >
+                  <Trash2 size={16} />
+                </button>
+              )}
+            </div>
+          </GlassCard>
+
+          {/* Código de Acesso */}
+          <GlassCard className="p-5">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
                 <Key size={20} className="text-blue-400" />
