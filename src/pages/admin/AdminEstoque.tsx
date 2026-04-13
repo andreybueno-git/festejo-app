@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Layout, GlassCard } from '../../components';
-import { Plus, Search, Package, AlertTriangle, Minus, X } from 'lucide-react';
+import { Plus, Search, Package, AlertTriangle, Minus, X, Camera } from 'lucide-react';
 import {
   collection, onSnapshot, addDoc, updateDoc, doc, serverTimestamp
 } from 'firebase/firestore';
-import { db } from '../../services/firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, storage } from '../../services/firebase';
 import { Embalagem } from '../../types';
 
 export default function AdminEstoque() {
@@ -17,6 +18,9 @@ export default function AdminEstoque() {
   const [novaEmb, setNovaEmb] = useState({ nome: '', estoqueInicial: '', estoqueMinimo: '50' });
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState('');
+  const [foto, setFoto] = useState<File | null>(null);
+  const [fotoPreview, setFotoPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const unsub = onSnapshot(
@@ -57,6 +61,26 @@ export default function AdminEstoque() {
     setShowModal(true);
   };
 
+  const handleFotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setFoto(file);
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setFotoPreview(event.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removerFoto = () => {
+    setFoto(null);
+    setFotoPreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const confirmarMovimentacao = async () => {
     if (!embalagemSelecionada || !quantidade) return;
     setSalvando(true);
@@ -86,16 +110,31 @@ export default function AdminEstoque() {
     setSalvando(true);
     setErro('');
     try {
+      let fotoUrl: string | undefined;
+
+      if (foto) {
+        const timestamp = Date.now();
+        const filename = foto.name.replace(/\s+/g, '_');
+        const storagePath = `embalagens/${timestamp}_${filename}`;
+        const storageRef = ref(storage, storagePath);
+
+        await uploadBytes(storageRef, foto);
+        fotoUrl = await getDownloadURL(storageRef);
+      }
+
       await addDoc(collection(db, 'embalagens'), {
         nome: novaEmb.nome.trim(),
         estoqueAtual: parseInt(novaEmb.estoqueInicial) || 0,
         estoqueMinimo: parseInt(novaEmb.estoqueMinimo) || 50,
         unidade: 'unidade',
         ativo: true,
+        fotoUrl: fotoUrl || null,
         criadoEm: serverTimestamp(),
         atualizadoEm: serverTimestamp(),
       });
+
       setNovaEmb({ nome: '', estoqueInicial: '', estoqueMinimo: '50' });
+      removerFoto();
       setShowModal(false);
     } catch {
       setErro('Erro ao cadastrar. Verifique sua conexão.');
@@ -114,7 +153,7 @@ export default function AdminEstoque() {
             <p className="text-white/50 text-sm">{embalagens.length} embalagens cadastradas</p>
           </div>
           <button
-            onClick={() => { setNovaEmb({ nome: '', estoqueInicial: '', estoqueMinimo: '50' }); setErro(''); setModalType('nova'); setShowModal(true); }}
+            onClick={() => { setNovaEmb({ nome: '', estoqueInicial: '', estoqueMinimo: '50' }); setErro(''); removerFoto(); setModalType('nova'); setShowModal(true); }}
             className="w-10 h-10 rounded-xl flex items-center justify-center bg-blue-500/20 border border-blue-500/30 text-blue-300 hover:bg-blue-500/30 transition-all"
           >
             <Plus size={20} />
@@ -210,7 +249,12 @@ export default function AdminEstoque() {
                 {modalType === 'saida' && 'Saída de Estoque'}
               </h3>
               <button
-                onClick={() => setShowModal(false)}
+                onClick={() => {
+                  setShowModal(false);
+                  if (modalType === 'nova') {
+                    removerFoto();
+                  }
+                }}
                 className="text-white/40 hover:text-white transition-colors"
               >
                 <X size={20} />
@@ -253,6 +297,40 @@ export default function AdminEstoque() {
                       min="1"
                     />
                   </div>
+                </div>
+
+                {/* Photo Upload */}
+                <div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFotoSelect}
+                    className="hidden"
+                  />
+                  {fotoPreview ? (
+                    <div className="relative">
+                      <img
+                        src={fotoPreview}
+                        alt="preview"
+                        className="w-full h-40 object-cover rounded-xl"
+                      />
+                      <button
+                        onClick={removerFoto}
+                        className="absolute top-2 right-2 w-6 h-6 rounded-full bg-red-500/80 flex items-center justify-center text-white hover:bg-red-500 transition-colors"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="w-full py-3 rounded-xl border border-dashed border-white/20 text-white/50 text-sm flex items-center justify-center gap-2 hover:border-white/40 transition-colors"
+                    >
+                      <Camera size={18} />
+                      Adicionar foto
+                    </button>
+                  )}
                 </div>
 
                 {erro && (
