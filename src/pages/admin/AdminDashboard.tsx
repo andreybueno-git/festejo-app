@@ -158,7 +158,7 @@ const AdminDashboard: React.FC = () => {
         <div className="mb-auto">
           <h2 className="text-white text-lg font-semibold mb-3">Ações rápidas</h2>
           <div className="flex gap-3">
-            <GlassCard variant="success" className="flex-1" onClick={() => navigate('/admin/distribuir')}>
+            <GlassCard variant="success" className="flex-1" onClick={() => navigate('/admin/barracas')}>
               <div className="p-4 text-center">
                 <Package className="mx-auto mb-2 text-green-300" size={24} />
                 <p className="text-green-300 text-sm font-medium">Distribuir</p>

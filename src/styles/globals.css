@@ -259,6 +259,15 @@ body {
   }
 }
 
+/* Conteúdo de página com espaçamento correto para iOS */
+.page-content {
+  padding-left: 20px;
+  padding-right: 20px;
+  padding-top: max(3.5rem, calc(env(safe-area-inset-top, 0px) + 1.25rem));
+  padding-bottom: 110px;
+  min-height: 100%;
+}
+
 /* Scrollbar personalizada */
 ::-webkit-scrollbar {
   width: 4px;

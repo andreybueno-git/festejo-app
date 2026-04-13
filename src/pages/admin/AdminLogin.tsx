@@ -110,12 +110,6 @@ export default function AdminLogin() {
           Sou responsável de barraca →
         </button>
 
-        {/* Dica para desenvolvimento */}
-        <div className="mt-8 text-center">
-          <p className="text-white/30 text-xs">
-            Modo desenvolvimento: senha = admin123
-          </p>
-        </div>
       </main>
     </div>
   );
