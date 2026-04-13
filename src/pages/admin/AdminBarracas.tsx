@@ -30,6 +30,7 @@ export default function AdminBarracas() {
   const [vinculos, setVinculos] = useState<(Vinculo & { embalagemNome?: string })[]>([]);
   const [showAddEmb, setShowAddEmb] = useState(false);
   const [qtdPrevista, setQtdPrevista] = useState('');
+  const [sucesso, setSucesso] = useState('');
 
   // Load all embalagens
   useEffect(() => {
@@ -128,6 +129,7 @@ export default function AdminBarracas() {
     setBarracaEmbalagens(b);
     setShowAddEmb(false);
     setErro('');
+    setSucesso('');
     setShowEmbModal(true);
   };
 
@@ -139,7 +141,9 @@ export default function AdminBarracas() {
     if (!barracaEmbalagens) return;
     setSalvando(true);
     setErro('');
+    setSucesso('');
     try {
+      const embNome = embalagens.find(e => e.id === embId)?.nome || 'embalagem';
       await addDoc(collection(db, 'vinculos'), {
         barracaId: barracaEmbalagens.id,
         embalagemId: embId,
@@ -150,6 +154,8 @@ export default function AdminBarracas() {
       });
       setQtdPrevista('');
       setShowAddEmb(false);
+      setSucesso(`"${embNome}" vinculada com sucesso!`);
+      setTimeout(() => setSucesso(''), 3000);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error('Erro ao vincular embalagem:', err);
@@ -492,6 +498,9 @@ export default function AdminBarracas() {
                 </GlassCard>
               )}
 
+              {sucesso && (
+                <p className="text-green-300 text-sm text-center bg-green-500/10 rounded-xl px-3 py-2">{sucesso}</p>
+              )}
               {erro && (
                 <p className="text-red-300 text-sm text-center bg-red-500/10 rounded-xl px-3 py-2">{erro}</p>
               )}
