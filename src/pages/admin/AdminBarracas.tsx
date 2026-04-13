@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Layout, GlassCard } from '../../components';
 import { useAuth } from '../../contexts/AuthContext';
-import { Plus, Search, X, User, Package, Pencil, Check, Minus, Trash2 } from 'lucide-react';
+import { Plus, Search, X, User, Package, Pencil, Check, Trash2, ArrowRight } from 'lucide-react';
 import { Barraca, Embalagem, Vinculo } from '../../types';
 import {
   collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, where, serverTimestamp
@@ -12,6 +13,7 @@ const EMOJIS_BARRACAS = ['🥟', '🍩', '🌭', '🍿', '🍭', '🍕', '🍢',
 
 export default function AdminBarracas() {
   const { barracas, adicionarBarraca, editarBarraca } = useAuth();
+  const navigate = useNavigate();
   const [busca, setBusca] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -435,7 +437,18 @@ export default function AdminBarracas() {
               ))}
 
               {/* Adicionar embalagem */}
-              {!showAddEmb ? (
+              {embalagens.length === 0 ? (
+                <div className="text-center py-4">
+                  <p className="text-white/40 text-sm mb-3">Nenhuma embalagem cadastrada no sistema</p>
+                  <button
+                    onClick={() => { setShowEmbModal(false); navigate('/admin/estoque'); }}
+                    className="py-3 px-5 rounded-xl bg-blue-500/20 border border-blue-500/30 text-blue-300 text-sm font-medium hover:bg-blue-500/30 transition-colors inline-flex items-center gap-2"
+                  >
+                    Ir para Estoque <ArrowRight size={16} />
+                  </button>
+                  <p className="text-white/25 text-xs mt-2">Cadastre embalagens primeiro para poder vinculá-las</p>
+                </div>
+              ) : !showAddEmb ? (
                 <button
                   onClick={() => { setShowAddEmb(true); setQtdPrevista(''); }}
                   className="w-full py-3 rounded-xl border border-dashed border-white/20 text-white/50 text-sm flex items-center justify-center gap-2 hover:border-white/40 hover:text-white/70 transition-colors"
@@ -446,14 +459,14 @@ export default function AdminBarracas() {
               ) : (
                 <GlassCard className="p-4" highlight>
                   <div className="flex items-center justify-between mb-3">
-                    <p className="text-white text-sm font-medium">Adicionar embalagem</p>
+                    <p className="text-white text-sm font-medium">Selecione a embalagem</p>
                     <button onClick={() => setShowAddEmb(false)} className="text-white/40 hover:text-white">
                       <X size={16} />
                     </button>
                   </div>
 
                   {embalagensDisponiveis.length === 0 ? (
-                    <p className="text-white/40 text-xs text-center py-4">Todas as embalagens já foram vinculadas</p>
+                    <p className="text-white/40 text-xs text-center py-4">Todas as embalagens já foram vinculadas a esta barraca</p>
                   ) : (
                     <div className="space-y-2 max-h-48 overflow-auto">
                       {embalagensDisponiveis.map(emb => (
