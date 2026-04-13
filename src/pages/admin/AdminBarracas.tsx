@@ -138,6 +138,7 @@ export default function AdminBarracas() {
   const adicionarVinculo = async (embId: string) => {
     if (!barracaEmbalagens) return;
     setSalvando(true);
+    setErro('');
     try {
       await addDoc(collection(db, 'vinculos'), {
         barracaId: barracaEmbalagens.id,
@@ -149,8 +150,10 @@ export default function AdminBarracas() {
       });
       setQtdPrevista('');
       setShowAddEmb(false);
-    } catch {
-      setErro('Erro ao vincular. Verifique sua conexão.');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error('Erro ao vincular embalagem:', err);
+      setErro(`Erro ao vincular: ${msg}`);
     } finally {
       setSalvando(false);
     }
@@ -160,8 +163,10 @@ export default function AdminBarracas() {
     setSalvando(true);
     try {
       await deleteDoc(doc(db, 'vinculos', vinculoId));
-    } catch {
-      setErro('Erro ao remover.');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error('Erro ao remover vínculo:', err);
+      setErro(`Erro ao remover: ${msg}`);
     } finally {
       setSalvando(false);
     }

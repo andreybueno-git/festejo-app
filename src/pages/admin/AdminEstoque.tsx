@@ -4,8 +4,7 @@ import { Plus, Search, Package, AlertTriangle, Minus, X, Camera, Trash2 } from '
 import {
   collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp
 } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db, storage } from '../../services/firebase';
+import { db } from '../../services/firebase';
 import { Embalagem } from '../../types';
 import { comprimirImagem } from '../../utils/imageUtils';
 
@@ -111,24 +110,15 @@ export default function AdminEstoque() {
     setSalvando(true);
     setErro('');
     try {
-      let fotoUrl: string | undefined;
+      let fotoUrl: string | null = null;
 
       if (foto) {
+        // Comprimir a foto primeiro (independente do método de upload)
         try {
-          // Tentar upload via Firebase Storage
-          const timestamp = Date.now();
-          const filename = foto.name.replace(/\s+/g, '_');
-          const storagePath = `embalagens/${timestamp}_${filename}`;
-          const storageRef = ref(storage, storagePath);
-          await uploadBytes(storageRef, foto);
-          fotoUrl = await getDownloadURL(storageRef);
-        } catch {
-          // Fallback: comprimir e salvar como base64 no Firestore
-          try {
-            fotoUrl = await comprimirImagem(foto, 400, 400, 0.5);
-          } catch {
-            // Se nem comprimir funcionar, ignorar a foto
-          }
+          fotoUrl = await comprimirImagem(foto, 400, 400, 0.5);
+        } catch (errFoto) {
+          console.warn('Falha ao comprimir foto, tentando sem foto:', errFoto);
+          // Se não conseguir comprimir, cadastra sem foto
         }
       }
 
@@ -138,7 +128,7 @@ export default function AdminEstoque() {
         estoqueMinimo: parseInt(novaEmb.estoqueMinimo) || 50,
         unidade: 'unidade',
         ativo: true,
-        fotoUrl: fotoUrl || null,
+        fotoUrl,
         criadoEm: serverTimestamp(),
         atualizadoEm: serverTimestamp(),
       });
@@ -146,8 +136,10 @@ export default function AdminEstoque() {
       setNovaEmb({ nome: '', estoqueInicial: '', estoqueMinimo: '50' });
       removerFoto();
       setShowModal(false);
-    } catch {
-      setErro('Erro ao cadastrar. Verifique sua conexão.');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error('Erro ao cadastrar embalagem:', err);
+      setErro(`Erro: ${msg}`);
     } finally {
       setSalvando(false);
     }

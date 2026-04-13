@@ -3,9 +3,8 @@ import { Layout, GlassCard } from '../../components';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Key, Calendar, Bell, Users, RefreshCw, Check, Copy, LogOut, MessageCircle, Image, Trash2 } from 'lucide-react';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { doc, setDoc } from 'firebase/firestore';
-import { storage, db } from '../../services/firebase';
+import { db } from '../../services/firebase';
 import { comprimirImagem } from '../../utils/imageUtils';
 
 export default function AdminConfig() {
@@ -66,28 +65,24 @@ export default function AdminConfig() {
     uploadFoto(file);
   };
 
+  const [erroFoto, setErroFoto] = useState('');
+
   const uploadFoto = async (file: File) => {
     setUploadingFoto(true);
+    setErroFoto('');
     try {
-      let url: string;
-
-      try {
-        // Tentar Firebase Storage
-        const storageRef = ref(storage, `config/fundo_${Date.now()}_${file.name}`);
-        await uploadBytes(storageRef, file);
-        url = await getDownloadURL(storageRef);
-      } catch {
-        // Fallback: comprimir e salvar como base64
-        url = await comprimirImagem(file, 600, 600, 0.5);
-      }
+      // Comprimir a foto direto (evita depender de Storage)
+      const url = await comprimirImagem(file, 600, 600, 0.5);
 
       await setDoc(doc(db, 'config', 'geral'), {
         fotoFundo: url
       }, { merge: true });
 
       setFotoPreview(null);
-    } catch (err) {
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
       console.error('Erro ao enviar foto:', err);
+      setErroFoto(`Erro: ${msg}`);
     } finally {
       setUploadingFoto(false);
     }
@@ -190,6 +185,9 @@ export default function AdminConfig() {
                 </button>
               )}
             </div>
+            {erroFoto && (
+              <p className="text-red-300 text-sm text-center bg-red-500/10 rounded-xl px-3 py-2 mt-3">{erroFoto}</p>
+            )}
           </GlassCard>
 
           {/* Código de Acesso */}
