@@ -1,0 +1,29 @@
+# Dependências
+node_modules/
+
+# Build
+dist/
+dist-ssr/
+
+# Variáveis de ambiente (NUNCA commitar!)
+.env
+.env.local
+.env.*.local
+
+# O .env.example pode ser commitado (não tem valores reais)
+!.env.example
+
+# Cache e logs
+.vite/
+*.log
+npm-debug.log*
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo

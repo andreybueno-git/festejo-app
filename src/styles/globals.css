@@ -1,0 +1,278 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Reset e estilos base */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'San Francisco', 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: linear-gradient(180deg, #0a1628 0%, #132035 25%, #1a3a5c 55%, #1e3a8a 100%);
+  min-height: 100vh;
+  color: white;
+}
+
+/* Componentes Liquid Glass */
+@layer components {
+  /* Card Glass básico */
+  .glass-card {
+    @apply relative;
+    background: linear-gradient(165deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.04) 40%, rgba(255, 255, 255, 0.06) 100%);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  }
+
+  /* Glass card com highlight no topo */
+  .glass-card-highlight::before {
+    content: '';
+    position: absolute;
+    top: 1px;
+    left: 20px;
+    right: 20px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
+    border-radius: 1px;
+  }
+
+  /* Input glass */
+  .glass-input {
+    background: rgba(0, 0, 0, 0.22);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 15px 18px;
+    color: white;
+    font-size: 16px;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.2s ease;
+  }
+
+  .glass-input:focus {
+    border-color: rgba(96, 165, 250, 0.5);
+  }
+
+  .glass-input::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+  }
+
+  /* Botão primário */
+  .btn-primary {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.85) 100%);
+    border-radius: 14px;
+    padding: 16px;
+    text-align: center;
+    color: #1e3a8a;
+    font-size: 16px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 1), inset 0 -1px 0 rgba(0, 0, 0, 0.05);
+    transition: transform 0.1s ease, box-shadow 0.2s ease;
+    width: 100%;
+  }
+
+  .btn-primary:active {
+    transform: scale(0.98);
+  }
+
+  /* Botão azul */
+  .btn-blue {
+    background: linear-gradient(180deg, rgba(59, 130, 246, 0.95) 0%, rgba(37, 99, 235, 0.98) 100%);
+    border-radius: 16px;
+    padding: 18px;
+    text-align: center;
+    color: white;
+    font-size: 17px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    transition: transform 0.1s ease;
+    width: 100%;
+  }
+
+  .btn-blue:active {
+    transform: scale(0.98);
+  }
+
+  /* Botão verde */
+  .btn-green {
+    background: linear-gradient(180deg, rgba(34, 197, 94, 0.9) 0%, rgba(22, 163, 74, 0.95) 100%);
+    border-radius: 14px;
+    padding: 16px;
+    text-align: center;
+    color: white;
+    font-size: 16px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(34, 197, 94, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    transition: transform 0.1s ease;
+    width: 100%;
+  }
+
+  .btn-green:active {
+    transform: scale(0.98);
+  }
+
+  /* Bottom Navigation */
+  .bottom-nav {
+    @apply glass-card;
+    border-radius: 22px;
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-around;
+  }
+
+  .nav-item {
+    padding: 10px 18px;
+    border-radius: 14px;
+    text-align: center;
+    transition: background 0.2s ease;
+  }
+
+  .nav-item.active {
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  /* Status badge */
+  .badge-pending {
+    background: rgba(251, 191, 36, 0.2);
+    border: 1px solid rgba(251, 191, 36, 0.25);
+    border-radius: 6px;
+    padding: 4px 8px;
+    color: #fcd34d;
+    font-size: 10px;
+    font-weight: 600;
+  }
+
+  .badge-success {
+    background: rgba(34, 197, 94, 0.15);
+    border: 1px solid rgba(34, 197, 94, 0.2);
+    border-radius: 6px;
+    padding: 4px 8px;
+    color: #86efac;
+    font-size: 10px;
+    font-weight: 600;
+  }
+
+  .badge-danger {
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    border-radius: 6px;
+    padding: 4px 8px;
+    color: #fca5a5;
+    font-size: 10px;
+    font-weight: 600;
+  }
+
+  /* Status dot */
+  .dot-pending {
+    width: 10px;
+    height: 10px;
+    background: linear-gradient(145deg, #fcd34d, #f59e0b);
+    border-radius: 50%;
+    box-shadow: 0 0 8px rgba(251, 191, 36, 0.5);
+  }
+
+  .dot-success {
+    width: 10px;
+    height: 10px;
+    background: linear-gradient(145deg, #86efac, #22c55e);
+    border-radius: 50%;
+    box-shadow: 0 0 6px rgba(34, 197, 94, 0.5);
+  }
+
+  .dot-danger {
+    width: 8px;
+    height: 8px;
+    background: linear-gradient(145deg, #f87171, #ef4444);
+    border-radius: 50%;
+    box-shadow: 0 0 6px rgba(239, 68, 68, 0.5);
+  }
+
+  /* Linha lateral colorida nos cards de pedido */
+  .line-pending {
+    position: absolute;
+    left: 0;
+    top: 10px;
+    bottom: 10px;
+    width: 3px;
+    background: linear-gradient(180deg, #fcd34d, #f59e0b);
+    border-radius: 0 2px 2px 0;
+  }
+
+  .line-success {
+    position: absolute;
+    left: 0;
+    top: 10px;
+    bottom: 10px;
+    width: 3px;
+    background: linear-gradient(180deg, #86efac, #22c55e);
+    border-radius: 0 2px 2px 0;
+  }
+}
+
+/* Ambient light effects */
+.ambient-light-top {
+  position: absolute;
+  top: -100px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 400px;
+  height: 300px;
+  background: radial-gradient(ellipse, rgba(96, 165, 250, 0.15) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.ambient-light-bottom {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 500px;
+  height: 350px;
+  background: radial-gradient(ellipse, rgba(59, 130, 246, 0.12) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* Safe area para iPhone */
+@supports (padding-top: env(safe-area-inset-top)) {
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Scrollbar personalizada */
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
