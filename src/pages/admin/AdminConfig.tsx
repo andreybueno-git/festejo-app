@@ -2,7 +2,7 @@ import { useState, useRef } from 'react';
 import { Layout, GlassCard } from '../../components';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Key, Calendar, Bell, Users, RefreshCw, Check, Copy, LogOut, MessageCircle, Image, X, Trash2 } from 'lucide-react';
+import { Key, Calendar, Bell, Users, RefreshCw, Check, Copy, LogOut, MessageCircle, Image, Trash2 } from 'lucide-react';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { doc, setDoc } from 'firebase/firestore';
 import { storage, db } from '../../services/firebase';

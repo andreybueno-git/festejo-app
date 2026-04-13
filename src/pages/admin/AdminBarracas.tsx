@@ -5,7 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { Plus, Search, X, User, Package, Pencil, Check, Trash2, ArrowRight } from 'lucide-react';
 import { Barraca, Embalagem, Vinculo } from '../../types';
 import {
-  collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, where, serverTimestamp
+  collection, onSnapshot, addDoc, deleteDoc, doc, query, where, serverTimestamp
 } from 'firebase/firestore';
 import { db } from '../../services/firebase';
 
@@ -161,14 +161,6 @@ export default function AdminBarracas() {
     }
   };
 
-  const atualizarQtdPrevista = async (vinculoId: string, novaQtd: number) => {
-    try {
-      await updateDoc(doc(db, 'vinculos', vinculoId), {
-        quantidadePrevista: novaQtd,
-        atualizadoEm: serverTimestamp(),
-      });
-    } catch { /* ignore */ }
-  };
 
   return (
     <Layout tipo="admin" showNav>
