@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { Layout, GlassCard } from '../../components';
-import { Plus, Search, Package, AlertTriangle, Minus, X, Camera } from 'lucide-react';
+import { Plus, Search, Package, AlertTriangle, Minus, X, Camera, Trash2 } from 'lucide-react';
 import {
-  collection, onSnapshot, addDoc, updateDoc, doc, serverTimestamp
+  collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../../services/firebase';
@@ -113,13 +113,20 @@ export default function AdminEstoque() {
       let fotoUrl: string | undefined;
 
       if (foto) {
-        const timestamp = Date.now();
-        const filename = foto.name.replace(/\s+/g, '_');
-        const storagePath = `embalagens/${timestamp}_${filename}`;
-        const storageRef = ref(storage, storagePath);
-
-        await uploadBytes(storageRef, foto);
-        fotoUrl = await getDownloadURL(storageRef);
+        try {
+          // Tentar upload via Firebase Storage
+          const timestamp = Date.now();
+          const filename = foto.name.replace(/\s+/g, '_');
+          const storagePath = `embalagens/${timestamp}_${filename}`;
+          const storageRef = ref(storage, storagePath);
+          await uploadBytes(storageRef, foto);
+          fotoUrl = await getDownloadURL(storageRef);
+        } catch {
+          // Fallback: salvar como base64 no Firestore
+          if (fotoPreview) {
+            fotoUrl = fotoPreview;
+          }
+        }
       }
 
       await addDoc(collection(db, 'embalagens'), {
@@ -140,6 +147,15 @@ export default function AdminEstoque() {
       setErro('Erro ao cadastrar. Verifique sua conexão.');
     } finally {
       setSalvando(false);
+    }
+  };
+
+  const excluirEmbalagem = async (emb: Embalagem) => {
+    if (!confirm(`Excluir "${emb.nome}"?`)) return;
+    try {
+      await deleteDoc(doc(db, 'embalagens', emb.id));
+    } catch {
+      setErro('Erro ao excluir.');
     }
   };
 
@@ -229,6 +245,12 @@ export default function AdminEstoque() {
                     >
                       <Minus size={14} />
                       Saída
+                    </button>
+                    <button
+                      onClick={() => excluirEmbalagem(emb)}
+                      className="px-3 py-2 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400/60 hover:text-red-400 hover:bg-red-500/20 transition-colors"
+                    >
+                      <Trash2 size={14} />
                     </button>
                   </div>
                 </div>
