@@ -1,55 +1,65 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Package, Clock, Check } from 'lucide-react';
-import { Layout, GlassCard, BottomNav, ChatBubble } from '../../components';
+import { Package, Clock, Check, LogOut } from 'lucide-react';
+import { Layout, GlassCard, BottomNav, ChatBubble, LoadingSkeleton } from '../../components';
 import { useAuth } from '../../contexts/AuthContext';
 import { versiculos } from '../../data/versiculos';
-
-interface Pedido {
-  id: string;
-  embalagem: string;
-  quantidade: number;
-  status: 'pendente' | 'concluido';
-  criadoEm: Date;
-  motivo?: string;
-}
+import {
+  collection, onSnapshot, query, where, orderBy
+} from 'firebase/firestore';
+import { db } from '../../services/firebase';
+import { Pedido } from '../../types';
 
 export function BarracaHome() {
   const navigate = useNavigate();
-  const { usuario, barracaAtual } = useAuth();
+  const { usuario, barracaAtual, logout } = useAuth();
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
-  const [diaFestejo, setDiaFestejo] = useState(1);
+  const [carregando, setCarregando] = useState(true);
+  const diaFestejo = 1;
 
-  // Mock de pedidos (virá do Firebase)
   useEffect(() => {
-    setPedidos([
-      {
-        id: '1',
-        embalagem: 'Marmitex Grande',
-        quantidade: 50,
-        status: 'pendente',
-        criadoEm: new Date(Date.now() - 5 * 60 * 1000), // 5 min atrás
-        motivo: 'Acabou o estoque'
-      },
-      {
-        id: '2',
-        embalagem: 'Sacola Kraft',
-        quantidade: 100,
-        status: 'concluido',
-        criadoEm: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 horas atrás
-      },
-      {
-        id: '3',
-        embalagem: 'Guardanapo',
-        quantidade: 30,
-        status: 'concluido',
-        criadoEm: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 dia atrás
-      },
-    ]);
+    if (!barracaAtual) {
+      setCarregando(false);
+      return;
+    }
 
-    // Simula dia do festejo (virá da config do Firebase)
-    setDiaFestejo(2);
-  }, []);
+    // Escuta pedidos da barraca atual (sem composite index — filtramos no cliente)
+    const unsub = onSnapshot(
+      query(collection(db, 'pedidos'), orderBy('criadoEm', 'desc')),
+      (snap) => {
+        const lista = snap.docs.map(d => ({
+          id: d.id,
+          ...d.data(),
+          criadoEm: d.data().criadoEm?.toDate?.() ?? new Date(),
+          concluidoEm: d.data().concluidoEm?.toDate?.() ?? undefined,
+        })) as Pedido[];
+        setPedidos(lista.filter(p => p.barracaId === barracaAtual.id));
+        setCarregando(false);
+      },
+      (err) => {
+        console.error('Erro ao carregar pedidos:', err);
+        // Tenta sem orderBy se índice for problema
+        const unsubFallback = onSnapshot(
+          query(collection(db, 'pedidos'), where('barracaId', '==', barracaAtual.id)),
+          (snap) => {
+            const lista = snap.docs.map(d => ({
+              id: d.id,
+              ...d.data(),
+              criadoEm: d.data().criadoEm?.toDate?.() ?? new Date(),
+              concluidoEm: d.data().concluidoEm?.toDate?.() ?? undefined,
+            })) as Pedido[];
+            // Ordena no cliente
+            lista.sort((a, b) => b.criadoEm.getTime() - a.criadoEm.getTime());
+            setPedidos(lista);
+            setCarregando(false);
+          }
+        );
+        return () => unsubFallback();
+      }
+    );
+
+    return () => unsub();
+  }, [barracaAtual]);
 
   const versiculoDoDia = versiculos[diaFestejo - 1] || versiculos[0];
 
@@ -60,19 +70,20 @@ export function BarracaHome() {
     const horas = Math.floor(diff / 3600000);
     const dias = Math.floor(diff / 86400000);
 
+    if (minutos < 1) return 'agora';
     if (minutos < 60) return `há ${minutos} min`;
     if (horas < 24) return `há ${horas} hora${horas > 1 ? 's' : ''}`;
     if (dias === 1) return 'ontem';
     return `há ${dias} dias`;
   };
 
+  const handleLogout = () => {
+    logout();
+    navigate('/barraca/login');
+  };
+
   const pedidosPendentes = pedidos.filter(p => p.status === 'pendente');
   const pedidosConcluidos = pedidos.filter(p => p.status === 'concluido');
-
-  const navItems = [
-    { id: 'home', icon: '🏠', label: 'Início', path: '/barraca' },
-    { id: 'pedidos', icon: '📋', label: 'Pedidos', path: '/barraca/pedidos' },
-  ];
 
   return (
     <Layout>
@@ -81,7 +92,7 @@ export function BarracaHome() {
         <div className="px-5 pt-6 pb-4">
           <GlassCard className="p-4" variant="success">
             <div className="flex items-center gap-3">
-              <div 
+              <div
                 className="w-12 h-12 rounded-xl flex items-center justify-center"
                 style={{
                   background: 'linear-gradient(145deg, rgba(255,255,255,0.15), rgba(255,255,255,0.05))',
@@ -90,14 +101,21 @@ export function BarracaHome() {
               >
                 <span className="text-2xl">{barracaAtual?.icone || '🎪'}</span>
               </div>
-              <div className="flex-1">
-                <h1 className="text-white text-lg font-semibold">
-                  {barracaAtual?.nome || 'Barraca do Pastel'}
+              <div className="flex-1 min-w-0">
+                <h1 className="text-white text-lg font-semibold truncate">
+                  {barracaAtual?.nome || 'Barraca'}
                 </h1>
-                <p className="text-white/50 text-sm">
-                  Responsável: {usuario?.nome || 'Maria'}
+                <p className="text-white/50 text-sm truncate">
+                  Responsável: {usuario?.nome || '—'}
                 </p>
               </div>
+              <button
+                onClick={handleLogout}
+                className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-white/50 hover:text-white hover:bg-white/10 transition-colors flex-shrink-0"
+                title="Sair"
+              >
+                <LogOut size={16} />
+              </button>
             </div>
           </GlassCard>
         </div>
@@ -113,12 +131,12 @@ export function BarracaHome() {
 
         {/* Botão Fazer Pedido */}
         <div className="px-5 mb-6">
-          <button 
+          <button
             onClick={() => navigate('/barraca/novo-pedido')}
             className="w-full"
           >
             <GlassCard className="p-5 text-center" variant="primary" highlight>
-              <div 
+              <div
                 className="w-14 h-14 mx-auto mb-3 rounded-2xl flex items-center justify-center"
                 style={{
                   background: 'linear-gradient(145deg, rgba(255,255,255,0.18), rgba(255,255,255,0.08))',
@@ -134,14 +152,27 @@ export function BarracaHome() {
         </div>
 
         {/* Lista de pedidos */}
-        <div className="flex-1 px-5 overflow-auto pb-24">
+        <div
+          className="flex-1 px-5 overflow-auto"
+          style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 16px) + 100px)' }}
+        >
           <h2 className="text-white text-lg font-semibold mb-3">Meus Pedidos</h2>
 
           <div className="space-y-3">
+            {carregando && <LoadingSkeleton count={2} />}
+
+            {!carregando && pedidos.length === 0 && (
+              <div className="text-center py-10">
+                <Package size={48} className="mx-auto text-white/20 mb-3" />
+                <p className="text-white/40">Nenhum pedido ainda</p>
+                <p className="text-white/25 text-xs mt-1">Toque em "Fazer Pedido" para começar</p>
+              </div>
+            )}
+
             {/* Pedidos pendentes */}
             {pedidosPendentes.map(pedido => (
-              <GlassCard 
-                key={pedido.id} 
+              <GlassCard
+                key={pedido.id}
                 className="p-4"
                 style={{
                   borderLeft: '3px solid',
@@ -149,15 +180,18 @@ export function BarracaHome() {
                 }}
               >
                 <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-white font-semibold">
-                      {pedido.quantidade}× {pedido.embalagem}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white font-semibold truncate">
+                      {pedido.quantidade}× {pedido.embalagemNome}
                     </p>
-                    <p className="text-white/45 text-sm">
+                    {pedido.motivo && (
+                      <p className="text-white/60 text-xs mt-1 truncate">{pedido.motivo}</p>
+                    )}
+                    <p className="text-white/45 text-sm mt-1">
                       {formatarTempo(pedido.criadoEm)}
                     </p>
                   </div>
-                  <div className="bg-amber-500/20 rounded-lg px-2 py-1">
+                  <div className="bg-amber-500/20 rounded-lg px-2 py-1 flex-shrink-0 ml-2">
                     <span className="text-amber-300 text-xs font-semibold flex items-center gap-1">
                       <Clock size={12} />
                       Pendente
@@ -169,8 +203,8 @@ export function BarracaHome() {
 
             {/* Pedidos concluídos */}
             {pedidosConcluidos.map(pedido => (
-              <GlassCard 
-                key={pedido.id} 
+              <GlassCard
+                key={pedido.id}
                 className="p-4 opacity-75"
                 style={{
                   borderLeft: '3px solid',
@@ -178,15 +212,15 @@ export function BarracaHome() {
                 }}
               >
                 <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-white/85 font-semibold">
-                      {pedido.quantidade}× {pedido.embalagem}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white/85 font-semibold truncate">
+                      {pedido.quantidade}× {pedido.embalagemNome}
                     </p>
-                    <p className="text-white/40 text-sm">
+                    <p className="text-white/40 text-sm mt-1">
                       {formatarTempo(pedido.criadoEm)}
                     </p>
                   </div>
-                  <div className="bg-green-500/15 rounded-lg px-2 py-1">
+                  <div className="bg-green-500/15 rounded-lg px-2 py-1 flex-shrink-0 ml-2">
                     <span className="text-green-300 text-xs font-semibold flex items-center gap-1">
                       <Check size={12} />
                       Concluído
@@ -195,18 +229,11 @@ export function BarracaHome() {
                 </div>
               </GlassCard>
             ))}
-
-            {pedidos.length === 0 && (
-              <div className="text-center py-10">
-                <Package size={48} className="mx-auto text-white/20 mb-3" />
-                <p className="text-white/40">Nenhum pedido ainda</p>
-              </div>
-            )}
           </div>
         </div>
 
         {/* Bottom Navigation */}
-        <BottomNav items={navItems} activeId="home" />
+        <BottomNav tipo="barraca" />
       </div>
     </Layout>
   );

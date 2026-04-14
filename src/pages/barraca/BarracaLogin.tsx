@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { GlassCard } from '../../components';
-import { Key, User, ChevronDown, Check } from 'lucide-react';
+import { Key, User, ChevronDown, Check, Store } from 'lucide-react';
 
 export function BarracaLogin() {
   const [etapa, setEtapa] = useState<'codigo' | 'selecao'>('codigo');
@@ -12,35 +12,27 @@ export function BarracaLogin() {
   const [showBarracas, setShowBarracas] = useState(false);
   const [erro, setErro] = useState('');
   const [loading, setLoading] = useState(false);
-  
-  const { loginBarraca } = useAuth();
-  const navigate = useNavigate();
 
-  // Mock de barracas disponíveis (virá do Firebase)
-  const barracas = [
-    { id: '1', nome: 'Barraca do Pastel', icone: '🥟' },
-    { id: '2', nome: 'Barraca do Churros', icone: '🍩' },
-    { id: '3', nome: 'Barraca da Pipoca', icone: '🍿' },
-    { id: '4', nome: 'Barraca do Espetinho', icone: '🍢' },
-    { id: '5', nome: 'Barraca das Bebidas', icone: '🥤' },
-    { id: '6', nome: 'Barraca do Cachorro-Quente', icone: '🌭' },
-  ];
+  const { loginBarraca, verificarCodigo, barracasDisponiveis, fotoFundo } = useAuth();
+  const navigate = useNavigate();
 
   const handleVerificarCodigo = async (e: React.FormEvent) => {
     e.preventDefault();
     setErro('');
     setLoading(true);
 
-    // Simula verificação do código
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // Mock: código válido é "FESTEJO2026"
-    if (codigoAcesso.toUpperCase() === 'FESTEJO2026') {
-      setEtapa('selecao');
-    } else {
-      setErro('Código de acesso inválido');
+    try {
+      const valido = await verificarCodigo(codigoAcesso);
+      if (valido) {
+        setEtapa('selecao');
+      } else {
+        setErro('Código de acesso inválido');
+      }
+    } catch {
+      setErro('Erro ao verificar código. Tente novamente.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleEntrar = async (e: React.FormEvent) => {
@@ -60,32 +52,47 @@ export function BarracaLogin() {
     setLoading(true);
 
     try {
-      const sucesso = await loginBarraca(nomeResponsavel, barracaSelecionada);
+      const sucesso = await loginBarraca(nomeResponsavel.trim(), barracaSelecionada);
       if (sucesso) {
         navigate('/barraca');
       } else {
-        setErro('Erro ao fazer login');
+        setErro('Erro ao fazer login. Barraca pode ter sido removida.');
       }
-    } catch (error) {
-      setErro('Erro ao fazer login');
+    } catch {
+      setErro('Erro ao fazer login. Verifique sua conexão.');
     } finally {
       setLoading(false);
     }
   };
 
-  const barracaAtual = barracas.find(b => b.id === barracaSelecionada);
+  const barracaAtual = barracasDisponiveis.find(b => b.id === barracaSelecionada);
 
   return (
-    <div className="min-h-screen flex flex-col relative overflow-hidden">
+    <div
+      className="min-h-screen flex flex-col relative overflow-hidden"
+      style={fotoFundo ? {
+        backgroundImage: `url(${fotoFundo})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      } : undefined}
+    >
+      {/* Overlay escuro quando tem foto de fundo */}
+      {fotoFundo && (
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      )}
+
       {/* Ambient lights */}
       <div className="ambient-light-top" />
       <div className="ambient-light-bottom" />
-      
+
       {/* Content */}
-      <main className="flex-1 flex flex-col items-center justify-center px-6 relative z-10">
+      <main
+        className="flex-1 flex flex-col items-center justify-center px-6 relative z-10"
+        style={{ paddingTop: 'env(safe-area-inset-top, 24px)', paddingBottom: 'env(safe-area-inset-bottom, 24px)' }}
+      >
         {/* Logo/Icon */}
         <div className="mb-8 text-center">
-          <div 
+          <div
             className="w-24 h-24 mx-auto mb-4 rounded-[28px] flex items-center justify-center"
             style={{
               background: 'linear-gradient(145deg, rgba(34,197,94,0.2), rgba(34,197,94,0.05))',
@@ -118,10 +125,11 @@ export function BarracaLogin() {
                     type="text"
                     value={codigoAcesso}
                     onChange={(e) => setCodigoAcesso(e.target.value.toUpperCase())}
-                    placeholder="Ex: FESTEJO2026"
+                    placeholder="Digite o código"
                     className="glass-input w-full pl-11 uppercase tracking-wider"
                     disabled={loading}
                     autoCapitalize="characters"
+                    autoFocus
                   />
                 </div>
                 <p className="text-white/40 text-xs mt-2">
@@ -166,6 +174,7 @@ export function BarracaLogin() {
                     placeholder="Digite seu nome"
                     className="glass-input w-full pl-11"
                     disabled={loading}
+                    autoFocus
                   />
                 </div>
               </div>
@@ -175,60 +184,75 @@ export function BarracaLogin() {
                 <label className="block text-white/70 text-sm mb-2 font-medium">
                   Sua Barraca
                 </label>
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setShowBarracas(!showBarracas)}
-                    className="glass-input w-full text-left flex items-center justify-between"
-                    disabled={loading}
-                  >
-                    {barracaAtual ? (
-                      <span className="flex items-center gap-3">
-                        <span className="text-xl">{barracaAtual.icone}</span>
-                        <span className="text-white">{barracaAtual.nome}</span>
-                      </span>
-                    ) : (
-                      <span className="text-white/40">Selecione uma barraca</span>
-                    )}
-                    <ChevronDown 
-                      size={18} 
-                      className={`text-white/40 transition-transform ${showBarracas ? 'rotate-180' : ''}`}
-                    />
-                  </button>
 
-                  {/* Dropdown */}
-                  {showBarracas && (
-                    <div 
-                      className="absolute top-full left-0 right-0 mt-2 rounded-xl overflow-hidden z-20"
-                      style={{
-                        background: 'linear-gradient(165deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.06) 100%)',
-                        backdropFilter: 'blur(40px)',
-                        border: '1px solid rgba(255,255,255,0.15)',
-                        boxShadow: '0 10px 40px rgba(0,0,0,0.3)'
-                      }}
-                    >
-                      {barracas.map(barraca => (
-                        <button
-                          key={barraca.id}
-                          type="button"
-                          onClick={() => {
-                            setBarracaSelecionada(barraca.id);
-                            setShowBarracas(false);
-                          }}
-                          className="w-full px-4 py-3 flex items-center justify-between hover:bg-white/10 transition-colors"
-                        >
-                          <span className="flex items-center gap-3">
-                            <span className="text-xl">{barraca.icone}</span>
-                            <span className="text-white">{barraca.nome}</span>
-                          </span>
-                          {barracaSelecionada === barraca.id && (
-                            <Check size={18} className="text-green-400" />
-                          )}
-                        </button>
-                      ))}
+                {barracasDisponiveis.length === 0 ? (
+                  <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3 flex items-start gap-3">
+                    <Store size={18} className="text-amber-400 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-amber-200 text-sm font-medium">
+                        Nenhuma barraca cadastrada
+                      </p>
+                      <p className="text-amber-200/70 text-xs mt-1">
+                        Peça ao administrador para cadastrar sua barraca antes de entrar.
+                      </p>
                     </div>
-                  )}
-                </div>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setShowBarracas(!showBarracas)}
+                      className="glass-input w-full text-left flex items-center justify-between"
+                      disabled={loading}
+                    >
+                      {barracaAtual ? (
+                        <span className="flex items-center gap-3">
+                          <span className="text-xl">{barracaAtual.icone}</span>
+                          <span className="text-white truncate">{barracaAtual.nome}</span>
+                        </span>
+                      ) : (
+                        <span className="text-white/40">Selecione uma barraca</span>
+                      )}
+                      <ChevronDown
+                        size={18}
+                        className={`text-white/40 transition-transform flex-shrink-0 ml-2 ${showBarracas ? 'rotate-180' : ''}`}
+                      />
+                    </button>
+
+                    {/* Dropdown */}
+                    {showBarracas && (
+                      <div
+                        className="absolute top-full left-0 right-0 mt-2 rounded-xl overflow-hidden z-20 max-h-64 overflow-y-auto"
+                        style={{
+                          background: 'linear-gradient(165deg, rgba(30,40,70,0.98) 0%, rgba(15,25,50,0.98) 100%)',
+                          backdropFilter: 'blur(40px)',
+                          border: '1px solid rgba(255,255,255,0.15)',
+                          boxShadow: '0 10px 40px rgba(0,0,0,0.4)'
+                        }}
+                      >
+                        {barracasDisponiveis.map(barraca => (
+                          <button
+                            key={barraca.id}
+                            type="button"
+                            onClick={() => {
+                              setBarracaSelecionada(barraca.id);
+                              setShowBarracas(false);
+                            }}
+                            className="w-full px-4 py-3 flex items-center justify-between hover:bg-white/10 transition-colors border-b border-white/5 last:border-b-0"
+                          >
+                            <span className="flex items-center gap-3 min-w-0">
+                              <span className="text-xl flex-shrink-0">{barraca.icone}</span>
+                              <span className="text-white truncate">{barraca.nome}</span>
+                            </span>
+                            {barracaSelecionada === barraca.id && (
+                              <Check size={18} className="text-green-400 flex-shrink-0 ml-2" />
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {erro && (
@@ -239,8 +263,8 @@ export function BarracaLogin() {
 
               <button
                 type="submit"
-                disabled={loading || !nomeResponsavel || !barracaSelecionada}
-                className="btn-primary w-full"
+                disabled={loading || !nomeResponsavel.trim() || !barracaSelecionada || barracasDisponiveis.length === 0}
+                className="btn-primary w-full disabled:opacity-50"
               >
                 {loading ? 'Entrando...' : 'Entrar'}
               </button>
@@ -251,6 +275,8 @@ export function BarracaLogin() {
                 onClick={() => {
                   setEtapa('codigo');
                   setErro('');
+                  setBarracaSelecionada('');
+                  setNomeResponsavel('');
                 }}
                 className="w-full text-white/40 text-sm hover:text-white/60 transition-colors"
               >
@@ -267,13 +293,6 @@ export function BarracaLogin() {
         >
           Sou administrador →
         </button>
-
-        {/* Dica para desenvolvimento */}
-        <div className="mt-8 text-center">
-          <p className="text-white/30 text-xs">
-            Modo desenvolvimento: código = FESTEJO2026
-          </p>
-        </div>
       </main>
     </div>
   );

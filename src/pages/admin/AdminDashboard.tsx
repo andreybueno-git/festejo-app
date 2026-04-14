@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Package, Plus, X, AlertTriangle, ShoppingCart } from 'lucide-react';
-import { collection, query, where, onSnapshot, orderBy, limit } from 'firebase/firestore';
+import { Bell, Package, Plus, X, AlertTriangle, ShoppingCart, Check } from 'lucide-react';
+import { collection, query, where, onSnapshot, orderBy, limit, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../services/firebase';
 import { Layout, GlassCard, BottomNav } from '../../components';
 import { useAuth } from '../../contexts/AuthContext';
@@ -65,6 +65,17 @@ const AdminDashboard: React.FC = () => {
   }, []);
 
   const totalNotificacoes = pedidosPendentes.length + embalagensAlerta.length;
+
+  const concluirPedido = async (pedido: Pedido) => {
+    try {
+      await updateDoc(doc(db, 'pedidos', pedido.id), {
+        status: 'concluido',
+        concluidoEm: serverTimestamp(),
+      });
+    } catch (err) {
+      console.error('Erro ao concluir pedido:', err);
+    }
+  };
 
   const formatTime = (date: Date) => {
     const now = new Date();
@@ -147,14 +158,20 @@ const AdminDashboard: React.FC = () => {
             ) : (
               pedidosPendentes.slice(0, 5).map((pedido) => (
                 <GlassCard key={pedido.id}>
-                  <div className="p-4 flex justify-between items-center">
-                    <div>
-                      <p className="text-white text-[15px] font-medium mb-0.5">{pedido.barracaNome}</p>
-                      <p className="text-white/50 text-[13px]">
+                  <div className="p-4 flex justify-between items-center gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white text-[15px] font-medium mb-0.5 truncate">{pedido.barracaNome}</p>
+                      <p className="text-white/50 text-[13px] truncate">
                         {pedido.quantidade}× {pedido.embalagemNome} · {formatTime(pedido.criadoEm)}
                       </p>
                     </div>
-                    <div className="w-2.5 h-2.5 bg-gradient-to-br from-yellow-300 to-yellow-500 rounded-full shadow-lg shadow-yellow-500/50" />
+                    <button
+                      onClick={() => concluirPedido(pedido)}
+                      className="w-9 h-9 rounded-xl bg-green-500/20 border border-green-500/30 flex items-center justify-center text-green-300 hover:bg-green-500/30 transition-colors flex-shrink-0"
+                      title="Marcar como concluído"
+                    >
+                      <Check size={16} />
+                    </button>
                   </div>
                 </GlassCard>
               ))
@@ -253,11 +270,20 @@ const AdminDashboard: React.FC = () => {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-white text-sm font-medium truncate">{pedido.barracaNome}</p>
-                          <p className="text-white/50 text-xs mt-0.5">
+                          <p className="text-white/50 text-xs mt-0.5 truncate">
                             {pedido.quantidade}× {pedido.embalagemNome} · {formatTime(pedido.criadoEm)}
                           </p>
+                          {pedido.motivo && (
+                            <p className="text-white/40 text-xs mt-0.5 italic truncate">"{pedido.motivo}"</p>
+                          )}
                         </div>
-                        <div className="w-2 h-2 rounded-full bg-yellow-400 flex-shrink-0" />
+                        <button
+                          onClick={() => concluirPedido(pedido)}
+                          className="w-9 h-9 rounded-xl bg-green-500/20 border border-green-500/30 flex items-center justify-center text-green-300 hover:bg-green-500/30 transition-colors flex-shrink-0"
+                          title="Concluir"
+                        >
+                          <Check size={16} />
+                        </button>
                       </div>
                     </GlassCard>
                   ))}
