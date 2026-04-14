@@ -2,10 +2,10 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout, GlassCard, LoadingSkeleton } from '../../components';
 import { useAuth } from '../../contexts/AuthContext';
-import { Plus, Search, X, User, Package, Pencil, Check, Trash2, ArrowRight } from 'lucide-react';
+import { Plus, Search, X, User, Package, Pencil, Check, Trash2, ArrowRight, Minus, Send } from 'lucide-react';
 import { Barraca, Embalagem, Vinculo } from '../../types';
 import {
-  collection, onSnapshot, addDoc, deleteDoc, doc, serverTimestamp
+  collection, onSnapshot, addDoc, deleteDoc, updateDoc, doc, serverTimestamp
 } from 'firebase/firestore';
 import { db } from '../../services/firebase';
 
@@ -29,7 +29,8 @@ export default function AdminBarracas() {
   const [embalagens, setEmbalagens] = useState<Embalagem[]>([]);
   const [vinculos, setVinculos] = useState<(Vinculo & { embalagemNome?: string })[]>([]);
   const [showAddEmb, setShowAddEmb] = useState(false);
-  const [qtdPrevista, setQtdPrevista] = useState('');
+  const [embSelecionada, setEmbSelecionada] = useState<Embalagem | null>(null);
+  const [qtdDistribuir, setQtdDistribuir] = useState('');
   const [sucesso, setSucesso] = useState('');
 
   // Load all embalagens
@@ -128,6 +129,10 @@ export default function AdminBarracas() {
   const abrirEmbalagens = (b: Barraca) => {
     setBarracaEmbalagens(b);
     setShowAddEmb(false);
+    setEmbSelecionada(null);
+    setQtdDistribuir('');
+    setShowDistribuir(null);
+    setQtdMais('');
     setErro('');
     setSucesso('');
     setShowEmbModal(true);
@@ -137,29 +142,99 @@ export default function AdminBarracas() {
   const embVinculadosIds = vinculos.map(v => v.embalagemId);
   const embalagensDisponiveis = embalagens.filter(e => !embVinculadosIds.includes(e.id));
 
-  const adicionarVinculo = async (embId: string) => {
-    if (!barracaEmbalagens) return;
+  const selecionarEmbalagem = (emb: Embalagem) => {
+    setEmbSelecionada(emb);
+    setQtdDistribuir('');
+    setErro('');
+  };
+
+  const adicionarVinculo = async () => {
+    if (!barracaEmbalagens || !embSelecionada) return;
+    const qtd = parseInt(qtdDistribuir) || 0;
+
+    if (qtd > embSelecionada.estoqueAtual) {
+      setErro(`Estoque insuficiente! Disponível: ${embSelecionada.estoqueAtual} un`);
+      return;
+    }
+
     setSalvando(true);
     setErro('');
     setSucesso('');
     try {
-      const embNome = embalagens.find(e => e.id === embId)?.nome || 'embalagem';
+      // 1. Criar vínculo com a quantidade distribuída
       await addDoc(collection(db, 'vinculos'), {
         barracaId: barracaEmbalagens.id,
-        embalagemId: embId,
-        quantidadePrevista: parseInt(qtdPrevista) || 0,
-        quantidadeRecebida: 0,
+        embalagemId: embSelecionada.id,
+        quantidadePrevista: qtd,
+        quantidadeRecebida: qtd,
         criadoEm: serverTimestamp(),
         atualizadoEm: serverTimestamp(),
       });
-      setQtdPrevista('');
+
+      // 2. Decrementar estoque geral
+      if (qtd > 0) {
+        const novoEstoque = Math.max(0, embSelecionada.estoqueAtual - qtd);
+        await updateDoc(doc(db, 'embalagens', embSelecionada.id), {
+          estoqueAtual: novoEstoque,
+          atualizadoEm: serverTimestamp(),
+        });
+      }
+
+      const nome = embSelecionada.nome;
+      setEmbSelecionada(null);
+      setQtdDistribuir('');
       setShowAddEmb(false);
-      setSucesso(`"${embNome}" vinculada com sucesso!`);
+      setSucesso(`${qtd > 0 ? `${qtd}× ` : ''}"${nome}" distribuída!`);
       setTimeout(() => setSucesso(''), 3000);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error('Erro ao vincular embalagem:', err);
       setErro(`Erro ao vincular: ${msg}`);
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  // Distribuir mais unidades para uma barraca já vinculada
+  const [showDistribuir, setShowDistribuir] = useState<string | null>(null);
+  const [qtdMais, setQtdMais] = useState('');
+
+  const distribuirMais = async (vinculo: Vinculo & { embalagemNome?: string }) => {
+    const qtd = parseInt(qtdMais) || 0;
+    if (qtd <= 0) return;
+
+    const emb = embalagens.find(e => e.id === vinculo.embalagemId);
+    if (!emb) return;
+
+    if (qtd > emb.estoqueAtual) {
+      setErro(`Estoque insuficiente! Disponível: ${emb.estoqueAtual} un`);
+      return;
+    }
+
+    setSalvando(true);
+    setErro('');
+    try {
+      // Atualizar vínculo
+      await updateDoc(doc(db, 'vinculos', vinculo.id), {
+        quantidadePrevista: (vinculo.quantidadePrevista || 0) + qtd,
+        quantidadeRecebida: (vinculo.quantidadeRecebida || 0) + qtd,
+        atualizadoEm: serverTimestamp(),
+      });
+
+      // Decrementar estoque geral
+      const novoEstoque = Math.max(0, emb.estoqueAtual - qtd);
+      await updateDoc(doc(db, 'embalagens', emb.id), {
+        estoqueAtual: novoEstoque,
+        atualizadoEm: serverTimestamp(),
+      });
+
+      setShowDistribuir(null);
+      setQtdMais('');
+      setSucesso(`+${qtd} "${emb.nome}" distribuídas!`);
+      setTimeout(() => setSucesso(''), 3000);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setErro(`Erro: ${msg}`);
     } finally {
       setSalvando(false);
     }
@@ -428,12 +503,55 @@ export default function AdminBarracas() {
                 </div>
               ) : !showAddEmb ? (
                 <button
-                  onClick={() => { setShowAddEmb(true); setQtdPrevista(''); }}
+                  onClick={() => { setShowAddEmb(true); setQtdDistribuir(''); setEmbSelecionada(null); }}
                   className="w-full py-3.5 rounded-xl bg-blue-500/20 border border-blue-500/30 text-blue-300 text-sm font-medium flex items-center justify-center gap-2 hover:bg-blue-500/30 transition-colors"
                 >
                   <Plus size={18} />
                   Adicionar embalagem
                 </button>
+              ) : embSelecionada ? (
+                <GlassCard className="p-4" highlight>
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-white text-sm font-medium">Quanto distribuir?</p>
+                    <button
+                      onClick={() => { setEmbSelecionada(null); setQtdDistribuir(''); setErro(''); }}
+                      className="text-white/40 hover:text-white"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+
+                  <div className="bg-white/5 rounded-xl p-3 mb-3 flex items-center gap-3">
+                    <Package size={18} className="text-blue-400 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white text-sm font-medium truncate">{embSelecionada.nome}</p>
+                      <p className="text-white/40 text-xs">
+                        Estoque disponível: <span className="text-green-400 font-medium">{embSelecionada.estoqueAtual} un</span>
+                      </p>
+                    </div>
+                  </div>
+
+                  <label className="block text-white/70 text-sm mb-2">Quantidade a entregar</label>
+                  <input
+                    type="number"
+                    value={qtdDistribuir}
+                    onChange={(e) => setQtdDistribuir(e.target.value)}
+                    placeholder="0"
+                    className="glass-input w-full text-center text-xl mb-3"
+                    min="0"
+                    max={embSelecionada.estoqueAtual}
+                    autoFocus
+                  />
+
+                  <button
+                    onClick={adicionarVinculo}
+                    disabled={salvando || parseInt(qtdDistribuir || '0') > embSelecionada.estoqueAtual}
+                    className="w-full py-3 rounded-xl bg-green-500/20 border border-green-500/30 text-green-300 font-medium hover:bg-green-500/30 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    <Send size={16} />
+                    {salvando ? 'Distribuindo...' : 'Distribuir'}
+                  </button>
+                </GlassCard>
               ) : (
                 <GlassCard className="p-4" highlight>
                   <div className="flex items-center justify-between mb-3">
@@ -446,20 +564,22 @@ export default function AdminBarracas() {
                   {embalagensDisponiveis.length === 0 ? (
                     <p className="text-white/40 text-xs text-center py-4">Todas as embalagens já foram vinculadas a esta barraca</p>
                   ) : (
-                    <div className="space-y-2 max-h-48 overflow-auto">
+                    <div className="space-y-2 max-h-60 overflow-auto">
                       {embalagensDisponiveis.map(emb => (
                         <button
                           key={emb.id}
-                          onClick={() => adicionarVinculo(emb.id)}
-                          disabled={salvando}
-                          className="w-full flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors text-left disabled:opacity-50"
+                          onClick={() => selecionarEmbalagem(emb)}
+                          disabled={salvando || emb.estoqueAtual === 0}
+                          className="w-full flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors text-left disabled:opacity-40"
                         >
                           <Package size={16} className="text-white/40 flex-shrink-0" />
                           <div className="flex-1 min-w-0">
                             <p className="text-white text-sm truncate">{emb.nome}</p>
-                            <p className="text-white/30 text-xs">Estoque: {emb.estoqueAtual} un</p>
+                            <p className={`text-xs ${emb.estoqueAtual === 0 ? 'text-red-400' : 'text-white/30'}`}>
+                              Estoque: {emb.estoqueAtual} un {emb.estoqueAtual === 0 && '(vazio)'}
+                            </p>
                           </div>
-                          <Plus size={16} className="text-blue-400 flex-shrink-0" />
+                          <ArrowRight size={16} className="text-blue-400 flex-shrink-0" />
                         </button>
                       ))}
                     </div>
@@ -483,28 +603,69 @@ export default function AdminBarracas() {
                 </div>
               )}
 
-              {vinculos.map(v => (
-                <GlassCard key={v.id} className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center flex-shrink-0">
-                      <Package size={18} className="text-blue-400" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-white text-sm font-medium truncate">{v.embalagemNome}</p>
-                      <div className="flex items-center gap-3 mt-1">
-                        <span className="text-white/40 text-xs">Previsto: {v.quantidadePrevista}</span>
-                        <span className="text-green-400/70 text-xs">Recebido: {v.quantidadeRecebida}</span>
+              {vinculos.map(v => {
+                const emb = embalagens.find(e => e.id === v.embalagemId);
+                const estoqueGeral = emb?.estoqueAtual ?? 0;
+                const expandido = showDistribuir === v.id;
+                return (
+                  <GlassCard key={v.id} className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center flex-shrink-0">
+                        <Package size={18} className="text-blue-400" />
                       </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white text-sm font-medium truncate">{v.embalagemNome}</p>
+                        <div className="flex items-center gap-3 mt-1">
+                          <span className="text-green-400 text-xs font-medium">{v.quantidadeRecebida} un</span>
+                          <span className="text-white/30 text-xs">· Estoque geral: {estoqueGeral}</span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => { setShowDistribuir(expandido ? null : v.id); setQtdMais(''); setErro(''); }}
+                        disabled={estoqueGeral === 0 && !expandido}
+                        className="w-8 h-8 rounded-lg bg-green-500/10 flex items-center justify-center text-green-400/70 hover:text-green-400 hover:bg-green-500/20 transition-colors disabled:opacity-30"
+                        title="Distribuir mais"
+                      >
+                        {expandido ? <Minus size={14} /> : <Plus size={14} />}
+                      </button>
+                      <button
+                        onClick={() => removerVinculo(v.id)}
+                        className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center text-red-400/60 hover:text-red-400 hover:bg-red-500/20 transition-colors"
+                      >
+                        <Trash2 size={14} />
+                      </button>
                     </div>
-                    <button
-                      onClick={() => removerVinculo(v.id)}
-                      className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center text-red-400/60 hover:text-red-400 hover:bg-red-500/20 transition-colors"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                </GlassCard>
-              ))}
+
+                    {expandido && (
+                      <div className="mt-3 pt-3 border-t border-white/10">
+                        <label className="block text-white/60 text-xs mb-2">
+                          Quanto distribuir a mais? (disponível: {estoqueGeral} un)
+                        </label>
+                        <div className="flex gap-2">
+                          <input
+                            type="number"
+                            value={qtdMais}
+                            onChange={(e) => setQtdMais(e.target.value)}
+                            placeholder="0"
+                            className="glass-input flex-1 text-center"
+                            min="1"
+                            max={estoqueGeral}
+                            autoFocus
+                          />
+                          <button
+                            onClick={() => distribuirMais(v)}
+                            disabled={salvando || !qtdMais || parseInt(qtdMais) <= 0 || parseInt(qtdMais) > estoqueGeral}
+                            className="px-4 rounded-xl bg-green-500/20 border border-green-500/30 text-green-300 text-sm font-medium hover:bg-green-500/30 transition-colors disabled:opacity-50 flex items-center gap-1"
+                          >
+                            <Send size={14} />
+                            {salvando ? '...' : 'OK'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </GlassCard>
+                );
+              })}
             </div>
 
             {/* Espaço extra para não ficar atrás do BottomNav */}
