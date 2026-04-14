@@ -6,6 +6,7 @@ import { Key, Calendar, Bell, Users, RefreshCw, Check, Copy, LogOut, MessageCirc
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../../services/firebase';
 import { comprimirImagem } from '../../utils/imageUtils';
+import { APP_VERSION, BUILD_DATE } from '../../version';
 
 export default function AdminConfig() {
   const { codigoAcesso, atualizarCodigoAcesso, deslogarTodasBarracas, logout, fotoFundo } = useAuth();
@@ -362,6 +363,39 @@ export default function AdminConfig() {
               <LogOut size={18} />
               Sair da conta de administrador
             </button>
+          </GlassCard>
+
+          {/* Versão + forçar atualização */}
+          <GlassCard className="p-5">
+            <div className="text-center mb-3">
+              <p className="text-white/60 text-xs">Versão do app</p>
+              <p className="text-white text-lg font-semibold mt-0.5">{APP_VERSION}</p>
+              <p className="text-white/30 text-xs mt-0.5">Build {BUILD_DATE}</p>
+            </div>
+            <button
+              onClick={async () => {
+                try {
+                  if ('serviceWorker' in navigator) {
+                    const regs = await navigator.serviceWorker.getRegistrations();
+                    for (const r of regs) await r.unregister();
+                  }
+                  if ('caches' in window) {
+                    const keys = await caches.keys();
+                    await Promise.all(keys.map(k => caches.delete(k)));
+                  }
+                } catch (e) {
+                  console.warn('Erro ao limpar cache:', e);
+                }
+                window.location.reload();
+              }}
+              className="w-full py-3 rounded-xl bg-blue-500/20 border border-blue-500/30 text-blue-300 font-medium hover:bg-blue-500/30 transition-colors flex items-center justify-center gap-2"
+            >
+              <RefreshCw size={18} />
+              Forçar atualização do app
+            </button>
+            <p className="text-white/30 text-xs text-center mt-2">
+              Limpa cache e recarrega a versão mais recente
+            </p>
           </GlassCard>
         </div>
       </div>

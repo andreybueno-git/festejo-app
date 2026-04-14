@@ -11,6 +11,31 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
+      workbox: {
+        // Força o novo SW a tomar controle imediatamente
+        skipWaiting: true,
+        clientsClaim: true,
+        // index.html sempre busca da rede primeiro (não serve versão velha)
+        navigateFallback: 'index.html',
+        runtimeCaching: [
+          {
+            urlPattern: ({ request }) => request.mode === 'navigate',
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'pages-cache',
+              networkTimeoutSeconds: 3,
+            },
+          },
+          {
+            urlPattern: /\.(?:js|css)$/,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'assets-cache',
+              networkTimeoutSeconds: 3,
+            },
+          },
+        ],
+      },
       manifest: {
         name: 'App Festejo',
         short_name: 'Festejo',
