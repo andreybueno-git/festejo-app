@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Layout, GlassCard } from '../../components';
+import { Layout, GlassCard, LoadingSkeleton } from '../../components';
 import { useAuth } from '../../contexts/AuthContext';
 import { Plus, Search, X, User, Package, Pencil, Check, Trash2, ArrowRight } from 'lucide-react';
 import { Barraca, Embalagem, Vinculo } from '../../types';
@@ -12,7 +12,7 @@ import { db } from '../../services/firebase';
 const EMOJIS_BARRACAS = ['🥟', '🍩', '🌭', '🍿', '🍭', '🍕', '🍢', '🍲', '🍰', '🍦', '🥤', '🌮', '🍔', '🥐', '🍳', '🧁'];
 
 export default function AdminBarracas() {
-  const { barracas, adicionarBarraca, editarBarraca } = useAuth();
+  const { barracas, adicionarBarraca, editarBarraca, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [busca, setBusca] = useState('');
   const [showModal, setShowModal] = useState(false);
@@ -180,7 +180,7 @@ export default function AdminBarracas() {
 
 
   return (
-    <Layout tipo="admin" showNav>
+    <Layout tipo="admin" showNav={!showEmbModal}>
       <div className="page-content">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
@@ -210,7 +210,8 @@ export default function AdminBarracas() {
 
         {/* Lista de barracas */}
         <div className="space-y-3">
-          {barracas.length === 0 && (
+          {authLoading && <LoadingSkeleton count={3} />}
+          {!authLoading && barracas.length === 0 && (
             <GlassCard className="p-8 text-center">
               <span className="text-4xl block mb-3">🏪</span>
               <p className="text-white/50 text-sm">Nenhuma barraca cadastrada</p>

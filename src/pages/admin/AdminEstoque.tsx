@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Layout, GlassCard } from '../../components';
+import { Layout, GlassCard, LoadingSkeleton } from '../../components';
 import { Plus, Search, Package, AlertTriangle, Minus, X, Camera, Trash2 } from 'lucide-react';
 import {
   collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp
@@ -20,6 +20,7 @@ export default function AdminEstoque() {
   const [erro, setErro] = useState('');
   const [foto, setFoto] = useState<File | null>(null);
   const [fotoPreview, setFotoPreview] = useState<string | null>(null);
+  const [carregando, setCarregando] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -33,8 +34,9 @@ export default function AdminEstoque() {
           atualizadoEm: d.data().atualizadoEm?.toDate?.() ?? new Date(),
         })) as Embalagem[];
         setEmbalagens(lista.filter(e => e.ativo !== false));
+        setCarregando(false);
       },
-      () => { /* silently handle offline */ }
+      () => { setCarregando(false); }
     );
     return () => unsub();
   }, []);
@@ -185,7 +187,8 @@ export default function AdminEstoque() {
 
         {/* Lista */}
         <div className="space-y-3">
-          {embalagens.length === 0 && (
+          {carregando && <LoadingSkeleton count={3} />}
+          {!carregando && embalagens.length === 0 && (
             <GlassCard className="p-8 text-center">
               <Package size={32} className="mx-auto text-white/30 mb-2" />
               <p className="text-white/50 text-sm">Nenhuma embalagem cadastrada</p>
