@@ -384,17 +384,17 @@ export default function AdminBarracas() {
 
       {/* Modal Embalagens da Barraca */}
       {showEmbModal && barracaEmbalagens && (
-        <div className="fixed inset-0 z-50 flex flex-col bg-black/60 backdrop-blur-sm" onClick={() => setShowEmbModal(false)}>
+        <div className="fixed inset-0 z-[100] flex flex-col bg-black/60 backdrop-blur-sm" onClick={() => setShowEmbModal(false)}>
           <div
-            className="mt-auto max-h-[80vh] overflow-auto rounded-t-3xl"
+            className="mt-auto max-h-[85vh] overflow-auto rounded-t-3xl"
             style={{
-              background: 'linear-gradient(180deg, rgba(20,30,60,0.98) 0%, rgba(10,22,40,0.98) 100%)',
+              background: 'linear-gradient(180deg, rgba(20,30,60,0.99) 0%, rgba(10,22,40,0.99) 100%)',
               borderTop: '1px solid rgba(255,255,255,0.15)',
             }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="sticky top-0 z-10 px-6 pt-5 pb-3" style={{ background: 'inherit' }}>
+            <div className="sticky top-0 z-10 px-6 pt-5 pb-3" style={{ background: 'rgba(20,30,60,0.99)' }}>
               <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-3">
                   <span className="text-2xl">{barracaEmbalagens.icone}</span>
@@ -412,40 +412,8 @@ export default function AdminBarracas() {
               </div>
             </div>
 
-            <div className="px-6 pb-8 space-y-3">
-              {/* Embalagens vinculadas */}
-              {vinculos.length === 0 && !showAddEmb && (
-                <div className="text-center py-8">
-                  <Package size={32} className="mx-auto text-white/20 mb-3" />
-                  <p className="text-white/40 text-sm">Nenhuma embalagem vinculada</p>
-                  <p className="text-white/25 text-xs mt-1">Adicione as embalagens que essa barraca vai usar</p>
-                </div>
-              )}
-
-              {vinculos.map(v => (
-                <GlassCard key={v.id} className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center flex-shrink-0">
-                      <Package size={18} className="text-blue-400" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-white text-sm font-medium truncate">{v.embalagemNome}</p>
-                      <div className="flex items-center gap-3 mt-1">
-                        <span className="text-white/40 text-xs">Previsto: {v.quantidadePrevista}</span>
-                        <span className="text-green-400/70 text-xs">Recebido: {v.quantidadeRecebida}</span>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => removerVinculo(v.id)}
-                      className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center text-red-400/60 hover:text-red-400 hover:bg-red-500/20 transition-colors"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                </GlassCard>
-              ))}
-
-              {/* Adicionar embalagem */}
+            <div className="px-6 pb-6 space-y-3">
+              {/* Botão Adicionar embalagem - SEMPRE VISÍVEL NO TOPO */}
               {embalagens.length === 0 ? (
                 <div className="text-center py-4">
                   <p className="text-white/40 text-sm mb-3">Nenhuma embalagem cadastrada no sistema</p>
@@ -460,9 +428,9 @@ export default function AdminBarracas() {
               ) : !showAddEmb ? (
                 <button
                   onClick={() => { setShowAddEmb(true); setQtdPrevista(''); }}
-                  className="w-full py-3 rounded-xl border border-dashed border-white/20 text-white/50 text-sm flex items-center justify-center gap-2 hover:border-white/40 hover:text-white/70 transition-colors"
+                  className="w-full py-3.5 rounded-xl bg-blue-500/20 border border-blue-500/30 text-blue-300 text-sm font-medium flex items-center justify-center gap-2 hover:bg-blue-500/30 transition-colors"
                 >
-                  <Plus size={16} />
+                  <Plus size={18} />
                   Adicionar embalagem
                 </button>
               ) : (
@@ -504,9 +472,42 @@ export default function AdminBarracas() {
               {erro && (
                 <p className="text-red-300 text-sm text-center bg-red-500/10 rounded-xl px-3 py-2">{erro}</p>
               )}
+
+              {/* Embalagens vinculadas */}
+              {vinculos.length === 0 && !showAddEmb && (
+                <div className="text-center py-6">
+                  <Package size={28} className="mx-auto text-white/20 mb-2" />
+                  <p className="text-white/40 text-sm">Nenhuma embalagem vinculada</p>
+                  <p className="text-white/25 text-xs mt-1">Use o botão acima para adicionar</p>
+                </div>
+              )}
+
+              {vinculos.map(v => (
+                <GlassCard key={v.id} className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center flex-shrink-0">
+                      <Package size={18} className="text-blue-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white text-sm font-medium truncate">{v.embalagemNome}</p>
+                      <div className="flex items-center gap-3 mt-1">
+                        <span className="text-white/40 text-xs">Previsto: {v.quantidadePrevista}</span>
+                        <span className="text-green-400/70 text-xs">Recebido: {v.quantidadeRecebida}</span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => removerVinculo(v.id)}
+                      className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center text-red-400/60 hover:text-red-400 hover:bg-red-500/20 transition-colors"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </GlassCard>
+              ))}
             </div>
 
-            <div style={{ paddingBottom: 'env(safe-area-inset-bottom, 16px)' }} />
+            {/* Espaço extra para não ficar atrás do BottomNav */}
+            <div style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 16px) + 80px)' }} />
           </div>
         </div>
       )}
