@@ -198,60 +198,25 @@ export function BarracaLogin() {
                     </div>
                   </div>
                 ) : (
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={() => setShowBarracas(!showBarracas)}
-                      className="glass-input w-full text-left flex items-center justify-between"
-                      disabled={loading}
-                    >
-                      {barracaAtual ? (
-                        <span className="flex items-center gap-3">
-                          <span className="text-xl">{barracaAtual.icone}</span>
-                          <span className="text-white truncate">{barracaAtual.nome}</span>
-                        </span>
-                      ) : (
-                        <span className="text-white/40">Selecione uma barraca</span>
-                      )}
-                      <ChevronDown
-                        size={18}
-                        className={`text-white/40 transition-transform flex-shrink-0 ml-2 ${showBarracas ? 'rotate-180' : ''}`}
-                      />
-                    </button>
-
-                    {/* Dropdown */}
-                    {showBarracas && (
-                      <div
-                        className="absolute top-full left-0 right-0 mt-2 rounded-xl overflow-hidden z-20 max-h-64 overflow-y-auto"
-                        style={{
-                          background: 'linear-gradient(165deg, rgba(30,40,70,0.98) 0%, rgba(15,25,50,0.98) 100%)',
-                          backdropFilter: 'blur(40px)',
-                          border: '1px solid rgba(255,255,255,0.15)',
-                          boxShadow: '0 10px 40px rgba(0,0,0,0.4)'
-                        }}
-                      >
-                        {barracasDisponiveis.map(barraca => (
-                          <button
-                            key={barraca.id}
-                            type="button"
-                            onClick={() => {
-                              setBarracaSelecionada(barraca.id);
-                              setShowBarracas(false);
-                            }}
-                            className="w-full px-4 py-3 flex items-center justify-between hover:bg-white/10 transition-colors border-b border-white/5 last:border-b-0"
-                          >
-                            <span className="flex items-center gap-3 min-w-0">
-                              <span className="text-xl flex-shrink-0">{barraca.icone}</span>
-                              <span className="text-white truncate">{barraca.nome}</span>
-                            </span>
-                            {barracaSelecionada === barraca.id && (
-                              <Check size={18} className="text-green-400 flex-shrink-0 ml-2" />
-                            )}
-                          </button>
-                        ))}
-                      </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowBarracas(true)}
+                    className="glass-input w-full text-left flex items-center justify-between"
+                    disabled={loading}
+                  >
+                    {barracaAtual ? (
+                      <span className="flex items-center gap-3">
+                        <span className="text-xl">{barracaAtual.icone}</span>
+                        <span className="text-white truncate">{barracaAtual.nome}</span>
+                      </span>
+                    ) : (
+                      <span className="text-white/40">Selecione uma barraca</span>
                     )}
-                  </div>
+                    <ChevronDown
+                      size={18}
+                      className="text-white/40 flex-shrink-0 ml-2"
+                    />
+                  </button>
                 )}
               </div>
 
@@ -294,6 +259,65 @@ export function BarracaLogin() {
           Sou administrador →
         </button>
       </main>
+
+      {/* Bottom sheet de seleção de barraca (sempre scroll nativo) */}
+      {showBarracas && (
+        <div
+          className="fixed inset-0 z-50 flex flex-col bg-black/60 backdrop-blur-sm"
+          onClick={() => setShowBarracas(false)}
+        >
+          <div
+            className="mt-auto max-h-[80vh] flex flex-col rounded-t-3xl"
+            style={{
+              background: 'linear-gradient(180deg, rgba(20,30,60,0.99) 0%, rgba(10,22,40,0.99) 100%)',
+              borderTop: '1px solid rgba(255,255,255,0.15)',
+              paddingBottom: 'env(safe-area-inset-bottom, 16px)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="px-6 pt-5 pb-3 flex items-center justify-between border-b border-white/10">
+              <h2 className="text-white text-lg font-semibold">Selecione sua barraca</h2>
+              <button
+                onClick={() => setShowBarracas(false)}
+                className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-white/60 hover:text-white transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Lista com scroll nativo */}
+            <div
+              className="flex-1 overflow-y-auto px-3 py-3"
+              style={{ WebkitOverflowScrolling: 'touch' }}
+            >
+              {barracasDisponiveis.map(barraca => (
+                <button
+                  key={barraca.id}
+                  type="button"
+                  onClick={() => {
+                    setBarracaSelecionada(barraca.id);
+                    setShowBarracas(false);
+                  }}
+                  className={`w-full px-4 py-4 mb-2 rounded-xl flex items-center justify-between transition-colors ${
+                    barracaSelecionada === barraca.id
+                      ? 'bg-blue-500/25 border border-blue-400/40'
+                      : 'bg-white/5 border border-white/10 hover:bg-white/10'
+                  }`}
+                >
+                  <span className="flex items-center gap-3 min-w-0">
+                    <span className="text-2xl flex-shrink-0">{barraca.icone}</span>
+                    <span className="text-white font-medium truncate">{barraca.nome}</span>
+                  </span>
+                  {barracaSelecionada === barraca.id && (
+                    <Check size={20} className="text-green-400 flex-shrink-0 ml-2" />
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
