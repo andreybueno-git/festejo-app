@@ -32,6 +32,9 @@ export default function AdminBarracas() {
   const [embSelecionada, setEmbSelecionada] = useState<Embalagem | null>(null);
   const [qtdDistribuir, setQtdDistribuir] = useState('');
   const [sucesso, setSucesso] = useState('');
+  // Estados de "distribuir mais" — declarados no topo para evitar ordem problemática
+  const [showDistribuir, setShowDistribuir] = useState<string | null>(null);
+  const [qtdMais, setQtdMais] = useState('');
 
   // Load all embalagens
   useEffect(() => {
@@ -196,9 +199,6 @@ export default function AdminBarracas() {
   };
 
   // Distribuir mais unidades para uma barraca já vinculada
-  const [showDistribuir, setShowDistribuir] = useState<string | null>(null);
-  const [qtdMais, setQtdMais] = useState('');
-
   const distribuirMais = async (vinculo: Vinculo & { embalagemNome?: string }) => {
     const qtd = parseInt(qtdMais) || 0;
     if (qtd <= 0) return;
@@ -489,102 +489,122 @@ export default function AdminBarracas() {
             </div>
 
             <div className="px-6 pb-6 space-y-3">
-              {/* Botão Adicionar embalagem - SEMPRE VISÍVEL NO TOPO */}
+              {/* Se NÃO há embalagens cadastradas no sistema, direciona para Estoque */}
               {embalagens.length === 0 ? (
-                <div className="text-center py-4">
-                  <p className="text-white/40 text-sm mb-3">Nenhuma embalagem cadastrada no sistema</p>
+                <div className="text-center py-6 bg-amber-500/10 border border-amber-500/30 rounded-xl">
+                  <Package size={28} className="mx-auto text-amber-400 mb-2" />
+                  <p className="text-amber-200 text-sm font-medium mb-1">Nenhuma embalagem cadastrada</p>
+                  <p className="text-amber-200/60 text-xs mb-3 px-4">
+                    Cadastre embalagens no Estoque primeiro
+                  </p>
                   <button
                     onClick={() => { setShowEmbModal(false); navigate('/admin/estoque'); }}
-                    className="py-3 px-5 rounded-xl bg-blue-500/20 border border-blue-500/30 text-blue-300 text-sm font-medium hover:bg-blue-500/30 transition-colors inline-flex items-center gap-2"
+                    className="py-2.5 px-4 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-200 text-sm font-medium hover:bg-amber-500/30 transition-colors inline-flex items-center gap-2"
                   >
                     Ir para Estoque <ArrowRight size={16} />
                   </button>
-                  <p className="text-white/25 text-xs mt-2">Cadastre embalagens primeiro para poder vinculá-las</p>
                 </div>
-              ) : !showAddEmb ? (
-                <button
-                  onClick={() => { setShowAddEmb(true); setQtdDistribuir(''); setEmbSelecionada(null); }}
-                  className="w-full py-3.5 rounded-xl bg-blue-500/20 border border-blue-500/30 text-blue-300 text-sm font-medium flex items-center justify-center gap-2 hover:bg-blue-500/30 transition-colors"
-                >
-                  <Plus size={18} />
-                  Adicionar embalagem
-                </button>
-              ) : embSelecionada ? (
-                <GlassCard className="p-4" highlight>
-                  <div className="flex items-center justify-between mb-3">
-                    <p className="text-white text-sm font-medium">Quanto distribuir?</p>
-                    <button
-                      onClick={() => { setEmbSelecionada(null); setQtdDistribuir(''); setErro(''); }}
-                      className="text-white/40 hover:text-white"
-                    >
-                      <X size={16} />
-                    </button>
-                  </div>
-
-                  <div className="bg-white/5 rounded-xl p-3 mb-3 flex items-center gap-3">
-                    <Package size={18} className="text-blue-400 flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-white text-sm font-medium truncate">{embSelecionada.nome}</p>
-                      <p className="text-white/40 text-xs">
-                        Estoque disponível: <span className="text-green-400 font-medium">{embSelecionada.estoqueAtual} un</span>
-                      </p>
-                    </div>
-                  </div>
-
-                  <label className="block text-white/70 text-sm mb-2">Quantidade a entregar</label>
-                  <input
-                    type="number"
-                    value={qtdDistribuir}
-                    onChange={(e) => setQtdDistribuir(e.target.value)}
-                    placeholder="0"
-                    className="glass-input w-full text-center text-xl mb-3"
-                    min="0"
-                    max={embSelecionada.estoqueAtual}
-                    autoFocus
-                  />
-
-                  <button
-                    onClick={adicionarVinculo}
-                    disabled={salvando || parseInt(qtdDistribuir || '0') > embSelecionada.estoqueAtual}
-                    className="w-full py-3 rounded-xl bg-green-500/20 border border-green-500/30 text-green-300 font-medium hover:bg-green-500/30 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                  >
-                    <Send size={16} />
-                    {salvando ? 'Distribuindo...' : 'Distribuir'}
-                  </button>
-                </GlassCard>
               ) : (
-                <GlassCard className="p-4" highlight>
-                  <div className="flex items-center justify-between mb-3">
-                    <p className="text-white text-sm font-medium">Selecione a embalagem</p>
-                    <button onClick={() => setShowAddEmb(false)} className="text-white/40 hover:text-white">
-                      <X size={16} />
-                    </button>
-                  </div>
+                <>
+                  {/* Botão principal: SEMPRE visível no topo quando há embalagens */}
+                  <button
+                    onClick={() => {
+                      if (showAddEmb) {
+                        setShowAddEmb(false);
+                        setEmbSelecionada(null);
+                        setQtdDistribuir('');
+                        setErro('');
+                      } else {
+                        setShowAddEmb(true);
+                        setEmbSelecionada(null);
+                        setQtdDistribuir('');
+                      }
+                    }}
+                    className="w-full py-4 rounded-xl bg-gradient-to-r from-blue-500/30 to-blue-600/30 border border-blue-400/40 text-white font-semibold flex items-center justify-center gap-2 hover:from-blue-500/40 hover:to-blue-600/40 transition-all shadow-lg"
+                  >
+                    {showAddEmb ? (
+                      <><X size={18} /> Cancelar</>
+                    ) : (
+                      <><Plus size={18} /> Adicionar embalagem</>
+                    )}
+                  </button>
 
-                  {embalagensDisponiveis.length === 0 ? (
-                    <p className="text-white/40 text-xs text-center py-4">Todas as embalagens já foram vinculadas a esta barraca</p>
-                  ) : (
-                    <div className="space-y-2 max-h-60 overflow-auto">
-                      {embalagensDisponiveis.map(emb => (
-                        <button
-                          key={emb.id}
-                          onClick={() => selecionarEmbalagem(emb)}
-                          disabled={salvando || emb.estoqueAtual === 0}
-                          className="w-full flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors text-left disabled:opacity-40"
-                        >
-                          <Package size={16} className="text-white/40 flex-shrink-0" />
+                  {/* Painel expandido: seleção → quantidade */}
+                  {showAddEmb && (
+                    embSelecionada ? (
+                      <GlassCard className="p-4" highlight>
+                        <div className="flex items-center justify-between mb-3">
+                          <p className="text-white text-sm font-medium">Quanto distribuir?</p>
+                          <button
+                            onClick={() => { setEmbSelecionada(null); setQtdDistribuir(''); setErro(''); }}
+                            className="text-white/40 hover:text-white"
+                          >
+                            ← voltar
+                          </button>
+                        </div>
+
+                        <div className="bg-white/5 rounded-xl p-3 mb-3 flex items-center gap-3">
+                          <Package size={18} className="text-blue-400 flex-shrink-0" />
                           <div className="flex-1 min-w-0">
-                            <p className="text-white text-sm truncate">{emb.nome}</p>
-                            <p className={`text-xs ${emb.estoqueAtual === 0 ? 'text-red-400' : 'text-white/30'}`}>
-                              Estoque: {emb.estoqueAtual} un {emb.estoqueAtual === 0 && '(vazio)'}
+                            <p className="text-white text-sm font-medium truncate">{embSelecionada.nome}</p>
+                            <p className="text-white/40 text-xs">
+                              Estoque disponível: <span className="text-green-400 font-medium">{embSelecionada.estoqueAtual} un</span>
                             </p>
                           </div>
-                          <ArrowRight size={16} className="text-blue-400 flex-shrink-0" />
+                        </div>
+
+                        <label className="block text-white/70 text-sm mb-2">Quantidade a entregar</label>
+                        <input
+                          type="number"
+                          value={qtdDistribuir}
+                          onChange={(e) => setQtdDistribuir(e.target.value)}
+                          placeholder="0"
+                          className="glass-input w-full text-center text-xl mb-3"
+                          min="0"
+                          max={embSelecionada.estoqueAtual}
+                          autoFocus
+                        />
+
+                        <button
+                          onClick={adicionarVinculo}
+                          disabled={salvando || parseInt(qtdDistribuir || '0') > embSelecionada.estoqueAtual}
+                          className="w-full py-3 rounded-xl bg-green-500/20 border border-green-500/30 text-green-300 font-medium hover:bg-green-500/30 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                        >
+                          <Send size={16} />
+                          {salvando ? 'Distribuindo...' : 'Distribuir'}
                         </button>
-                      ))}
-                    </div>
+                      </GlassCard>
+                    ) : (
+                      <GlassCard className="p-4" highlight>
+                        <p className="text-white text-sm font-medium mb-3">Selecione a embalagem</p>
+
+                        {embalagensDisponiveis.length === 0 ? (
+                          <p className="text-white/40 text-xs text-center py-4">Todas as embalagens já foram vinculadas a esta barraca</p>
+                        ) : (
+                          <div className="space-y-2 max-h-60 overflow-auto">
+                            {embalagensDisponiveis.map(emb => (
+                              <button
+                                key={emb.id}
+                                onClick={() => selecionarEmbalagem(emb)}
+                                disabled={salvando || emb.estoqueAtual === 0}
+                                className="w-full flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors text-left disabled:opacity-40"
+                              >
+                                <Package size={16} className="text-white/40 flex-shrink-0" />
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-white text-sm truncate">{emb.nome}</p>
+                                  <p className={`text-xs ${emb.estoqueAtual === 0 ? 'text-red-400' : 'text-white/30'}`}>
+                                    Estoque: {emb.estoqueAtual} un {emb.estoqueAtual === 0 && '(vazio)'}
+                                  </p>
+                                </div>
+                                <ArrowRight size={16} className="text-blue-400 flex-shrink-0" />
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </GlassCard>
+                    )
                   )}
-                </GlassCard>
+                </>
               )}
 
               {sucesso && (
