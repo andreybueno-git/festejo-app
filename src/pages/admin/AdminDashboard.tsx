@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bell, Package, Plus, X, AlertTriangle, ShoppingCart, Check } from 'lucide-react';
-import { collection, query, where, onSnapshot, orderBy, limit, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../services/firebase';
 import { Layout, GlassCard, BottomNav } from '../../components';
 import { useAuth } from '../../contexts/AuthContext';
@@ -19,11 +19,11 @@ const AdminDashboard: React.FC = () => {
   const diaFestejo = 2;
 
   useEffect(() => {
+    // Query sem orderBy/limit pra não depender de índice composto.
+    // Ordena e limita no cliente — sempre vai ter poucos pedidos pendentes.
     const pedidosQuery = query(
       collection(db, 'pedidos'),
-      where('status', '==', 'pendente'),
-      orderBy('criadoEm', 'desc'),
-      limit(10)
+      where('status', '==', 'pendente')
     );
 
     const unsubPedidos = onSnapshot(pedidosQuery, (snapshot) => {
@@ -31,8 +31,18 @@ const AdminDashboard: React.FC = () => {
         id: doc.id,
         ...doc.data()
       })) as Pedido[];
-      setPedidosPendentes(pedidos);
-    }, () => {});
+
+      // Ordena desc por criadoEm no cliente
+      pedidos.sort((a, b) => {
+        const ta = a.criadoEm ? new Date(a.criadoEm as unknown as string | number | Date).getTime() : 0;
+        const tb = b.criadoEm ? new Date(b.criadoEm as unknown as string | number | Date).getTime() : 0;
+        return tb - ta;
+      });
+
+      setPedidosPendentes(pedidos.slice(0, 10));
+    }, (err) => {
+      console.error('[dashboard] onSnapshot pedidos erro:', err);
+    });
 
     const embalagensQuery = query(
       collection(db, 'embalagens'),
@@ -47,7 +57,9 @@ const AdminDashboard: React.FC = () => {
 
       setTotalEmbalagens(embalagens.length);
       setEmbalagensAlerta(embalagens.filter(e => e.estoqueAtual <= e.estoqueMinimo));
-    }, () => {});
+    }, (err) => {
+      console.error('[dashboard] onSnapshot embalagens erro:', err);
+    });
 
     const barracasQuery = query(
       collection(db, 'barracas'),
@@ -56,7 +68,9 @@ const AdminDashboard: React.FC = () => {
 
     const unsubBarracas = onSnapshot(barracasQuery, (snapshot) => {
       setTotalBarracas(snapshot.size);
-    }, () => {});
+    }, (err) => {
+      console.error('[dashboard] onSnapshot barracas erro:', err);
+    });
 
     return () => {
       unsubPedidos();
