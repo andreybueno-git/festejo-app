@@ -7,10 +7,14 @@ import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../../services/firebase';
 import { comprimirImagem } from '../../utils/imageUtils';
 import { APP_VERSION, BUILD_DATE } from '../../version';
+import { registrarPushAdmin, removerPushAdmin, isPushSuportado, statusPermissao } from '../../services/pushNotifications';
 
 export default function AdminConfig() {
-  const { codigoAcesso, atualizarCodigoAcesso, deslogarTodasBarracas, logout, fotoFundo } = useAuth();
+  const { codigoAcesso, atualizarCodigoAcesso, deslogarTodasBarracas, logout, fotoFundo, usuario } = useAuth();
   const navigate = useNavigate();
+  const [pushStatus, setPushStatus] = useState<NotificationPermission | 'unsupported'>(statusPermissao());
+  const [pushLoading, setPushLoading] = useState(false);
+  const [pushMsg, setPushMsg] = useState<string | null>(null);
   const [novoCodigo, setNovoCodigo] = useState('');
   const [salvando, setSalvando] = useState(false);
   const [copiado, setCopiado] = useState(false);
@@ -319,14 +323,45 @@ export default function AdminConfig() {
                 </button>
               </div>
               <div className="flex items-center justify-between py-2">
-                <span className="text-white/80 text-sm">Notificações push</span>
+                <div className="flex-1 pr-3">
+                  <span className="text-white/80 text-sm block">Notificações push</span>
+                  <span className="text-white/40 text-xs">
+                    {pushStatus === 'granted' && 'Ativadas neste dispositivo'}
+                    {pushStatus === 'denied' && 'Bloqueadas — habilite nas permissões do navegador'}
+                    {pushStatus === 'default' && 'Toque para ativar'}
+                    {pushStatus === 'unsupported' && 'Não suportado neste dispositivo'}
+                  </span>
+                </div>
                 <button
-                  onClick={() => setConfig(prev => ({ ...prev, notificacoesPush: !prev.notificacoesPush }))}
-                  className={`w-12 h-7 rounded-full transition-colors ${config.notificacoesPush ? 'bg-green-500' : 'bg-white/20'}`}
+                  disabled={pushLoading || pushStatus === 'unsupported' || pushStatus === 'denied' || !isPushSuportado()}
+                  onClick={async () => {
+                    if (!usuario) return;
+                    setPushLoading(true);
+                    setPushMsg(null);
+                    try {
+                      if (pushStatus === 'granted') {
+                        await removerPushAdmin();
+                        setPushStatus(statusPermissao());
+                        setPushMsg('Notificações desativadas neste dispositivo.');
+                      } else {
+                        const token = await registrarPushAdmin(usuario.id, usuario.nome || 'Admin');
+                        setPushStatus(statusPermissao());
+                        setPushMsg(token
+                          ? 'Tudo certo! Este dispositivo vai receber novos pedidos.'
+                          : 'Não foi possível ativar. Verifique as permissões do navegador.');
+                      }
+                    } finally {
+                      setPushLoading(false);
+                    }
+                  }}
+                  className={`w-12 h-7 rounded-full transition-colors disabled:opacity-40 ${pushStatus === 'granted' ? 'bg-green-500' : 'bg-white/20'}`}
                 >
-                  <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${config.notificacoesPush ? 'translate-x-6' : 'translate-x-1'}`} />
+                  <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${pushStatus === 'granted' ? 'translate-x-6' : 'translate-x-1'}`} />
                 </button>
               </div>
+              {pushMsg && (
+                <p className="text-white/60 text-xs px-1">{pushMsg}</p>
+              )}
             </div>
           </GlassCard>
 

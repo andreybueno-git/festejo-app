@@ -6,6 +6,7 @@ import { db } from '../../services/firebase';
 import { Layout, GlassCard, BottomNav } from '../../components';
 import { useAuth } from '../../contexts/AuthContext';
 import { Pedido, Embalagem } from '../../types';
+import { registrarPushAdmin, iniciarListenerForeground, isPushSuportado, statusPermissao } from '../../services/pushNotifications';
 
 const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -63,6 +64,25 @@ const AdminDashboard: React.FC = () => {
       unsubBarracas();
     };
   }, []);
+
+  // Registra push FCM pro admin + listener de mensagens em foreground
+  useEffect(() => {
+    if (!usuario || !isPushSuportado()) return;
+
+    let unsub: (() => void) | null = null;
+
+    (async () => {
+      // Se já tem permissão, registra direto. Senão, o botão em Config pede.
+      if (statusPermissao() === 'granted') {
+        await registrarPushAdmin(usuario.id, usuario.nome || 'Admin');
+      }
+      unsub = await iniciarListenerForeground();
+    })();
+
+    return () => {
+      if (unsub) unsub();
+    };
+  }, [usuario]);
 
   const totalNotificacoes = pedidosPendentes.length + embalagensAlerta.length;
 

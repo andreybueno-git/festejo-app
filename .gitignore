@@ -17,6 +17,13 @@ dist-ssr/
 .vite/
 *.log
 npm-debug.log*
+vite.config.ts.timestamp-*
+vite.config.js.timestamp-*
+
+# Firebase
+firebase-debug.log
+.firebase/
+functions/node_modules/
 
 # Sistema operacional
 .DS_Store
