@@ -120,19 +120,40 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const barracaSelecionada = barracas.find(b => b.id === barracaId);
     if (!barracaSelecionada) return false;
 
+    const responsavelId = `resp-${Date.now()}`;
+    const nomeTrim = nomeResponsavel.trim();
+
     const novoUsuario: Usuario = {
-      id: `resp-${Date.now()}`,
-      nome: nomeResponsavel,
+      id: responsavelId,
+      nome: nomeTrim,
       tipo: 'responsavel',
       barracaId,
       criadoEm: new Date(),
       ativo: true
     };
 
+    // Grava o responsável atual no doc da barraca pro admin ver
+    try {
+      await updateDoc(doc(db, 'barracas', barracaId), {
+        responsavelNome: nomeTrim,
+        responsavelId,
+        responsavelLoginEm: serverTimestamp(),
+      });
+    } catch (e) {
+      console.warn('[auth] Falha ao atualizar responsável da barraca:', e);
+    }
+
+    // Reflete no estado local também
+    const barracaAtualizada: Barraca = {
+      ...barracaSelecionada,
+      responsavelNome: nomeTrim,
+      responsavelId,
+    };
+
     setUsuario(novoUsuario);
-    setBarraca(barracaSelecionada);
+    setBarraca(barracaAtualizada);
     localStorage.setItem('festejo_usuario', JSON.stringify(novoUsuario));
-    localStorage.setItem('festejo_barraca', JSON.stringify(barracaSelecionada));
+    localStorage.setItem('festejo_barraca', JSON.stringify(barracaAtualizada));
     return true;
   };
 
