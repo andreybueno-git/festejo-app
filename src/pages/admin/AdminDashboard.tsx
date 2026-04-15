@@ -32,12 +32,23 @@ const AdminDashboard: React.FC = () => {
         ...doc.data()
       })) as Pedido[];
 
-      // Ordena desc por criadoEm no cliente
-      pedidos.sort((a, b) => {
-        const ta = a.criadoEm ? new Date(a.criadoEm as unknown as string | number | Date).getTime() : 0;
-        const tb = b.criadoEm ? new Date(b.criadoEm as unknown as string | number | Date).getTime() : 0;
-        return tb - ta;
-      });
+      // Ordena desc por criadoEm no cliente (lida com Firestore Timestamp)
+      const toMs = (value: unknown): number => {
+        if (!value) return 0;
+        if (typeof value === 'object' && value !== null) {
+          const v = value as { toDate?: () => Date; seconds?: number };
+          if (typeof v.toDate === 'function') return v.toDate().getTime();
+          if (typeof v.seconds === 'number') return v.seconds * 1000;
+          if (value instanceof Date) return value.getTime();
+        }
+        if (typeof value === 'number') return value;
+        if (typeof value === 'string') {
+          const p = new Date(value).getTime();
+          return isNaN(p) ? 0 : p;
+        }
+        return 0;
+      };
+      pedidos.sort((a, b) => toMs(b.criadoEm) - toMs(a.criadoEm));
 
       setPedidosPendentes(pedidos.slice(0, 10));
     }, (err) => {
@@ -112,9 +123,24 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const formatTime = (date: Date) => {
-    const now = new Date();
-    const diff = Math.floor((now.getTime() - new Date(date).getTime()) / 60000);
+  const formatTime = (value: unknown) => {
+    if (!value) return 'agora';
+    let ts: number | null = null;
+    // Firestore Timestamp (tem .toDate() ou .seconds)
+    if (typeof value === 'object' && value !== null) {
+      const v = value as { toDate?: () => Date; seconds?: number };
+      if (typeof v.toDate === 'function') ts = v.toDate().getTime();
+      else if (typeof v.seconds === 'number') ts = v.seconds * 1000;
+      else if (value instanceof Date) ts = value.getTime();
+    } else if (typeof value === 'number') {
+      ts = value;
+    } else if (typeof value === 'string') {
+      const parsed = new Date(value).getTime();
+      if (!isNaN(parsed)) ts = parsed;
+    }
+    if (ts === null || isNaN(ts)) return 'agora';
+
+    const diff = Math.floor((Date.now() - ts) / 60000);
     if (diff < 1) return 'agora';
     if (diff < 60) return `${diff} min`;
     return `${Math.floor(diff / 60)}h`;
