@@ -6,7 +6,7 @@ import { db } from '../../services/firebase';
 import { Layout, GlassCard, BottomNav } from '../../components';
 import { useAuth } from '../../contexts/AuthContext';
 import { Pedido, Embalagem } from '../../types';
-import { registrarPushAdmin, iniciarListenerForeground, isPushSuportado, statusPermissao } from '../../services/pushNotifications';
+import { registrarPushAdmin, iniciarListenerForeground, isPushSuportado, statusPermissao, temTokenRegistrado } from '../../services/pushNotifications';
 
 const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -72,8 +72,9 @@ const AdminDashboard: React.FC = () => {
     let unsub: (() => void) | null = null;
 
     (async () => {
-      // Se já tem permissão, registra direto. Senão, o botão em Config pede.
-      if (statusPermissao() === 'granted') {
+      // Só re-registra se o usuário JÁ ativou antes neste dispositivo (tem token salvo).
+      // Se ele desligou explicitamente em Config, respeita a escolha.
+      if (statusPermissao() === 'granted' && temTokenRegistrado()) {
         await registrarPushAdmin(usuario.id, usuario.nome || 'Admin');
       }
       unsub = await iniciarListenerForeground();

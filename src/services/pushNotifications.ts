@@ -3,6 +3,7 @@ import { doc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { getMessagingIfSupported, db } from './firebase';
 
 const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY as string | undefined;
+const PUSH_TOKEN_KEY = 'festejo:fcm-token';
 
 /**
  * Pede permissão ao usuário e registra o token FCM no Firestore.
@@ -69,6 +70,7 @@ export async function registrarPushAdmin(usuarioId: string, nome: string): Promi
       atualizadoEm: serverTimestamp(),
     });
 
+    try { localStorage.setItem(PUSH_TOKEN_KEY, token); } catch { /* empty */ }
     console.log('[push] Token registrado:', token.slice(0, 20) + '...');
     return token;
   } catch (e) {
@@ -81,18 +83,39 @@ export async function registrarPushAdmin(usuarioId: string, nome: string): Promi
  * Remove o registro do push para este dispositivo (logout ou toggle off).
  */
 export async function removerPushAdmin(): Promise<void> {
+  // Limpa o localStorage primeiro — assim mesmo se o FCM falhar, o UI reflete "desativado"
+  let tokenSalvo: string | null = null;
+  try {
+    tokenSalvo = localStorage.getItem(PUSH_TOKEN_KEY);
+    localStorage.removeItem(PUSH_TOKEN_KEY);
+  } catch { /* empty */ }
+
   const messaging = await getMessagingIfSupported();
   if (!messaging) return;
 
   try {
-    // Não há API direta pra "ver o token atual" — obtemos de novo só pra deletar
-    const token = VAPID_KEY ? await getToken(messaging, { vapidKey: VAPID_KEY }).catch(() => null) : null;
+    // Tenta pelo token salvo; se não tiver, pede um novo só pra deletar
+    const token = tokenSalvo || (VAPID_KEY ? await getToken(messaging, { vapidKey: VAPID_KEY }).catch(() => null) : null);
     if (token) {
       await deleteDoc(doc(db, 'fcmTokens', token)).catch(() => {});
       await deleteToken(messaging).catch(() => {});
     }
   } catch (e) {
     console.warn('[push] Erro ao remover push:', e);
+  }
+}
+
+/**
+ * Retorna true se este dispositivo tem um token FCM ativo registrado.
+ * Combina presença no localStorage + permissão ainda concedida no navegador.
+ */
+export function temTokenRegistrado(): boolean {
+  if (!('Notification' in window)) return false;
+  if (Notification.permission !== 'granted') return false;
+  try {
+    return !!localStorage.getItem(PUSH_TOKEN_KEY);
+  } catch {
+    return false;
   }
 }
 

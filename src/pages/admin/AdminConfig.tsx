@@ -7,12 +7,13 @@ import { doc, setDoc } from 'firebase/firestore';
 import { db } from '../../services/firebase';
 import { comprimirImagem } from '../../utils/imageUtils';
 import { APP_VERSION, BUILD_DATE } from '../../version';
-import { registrarPushAdmin, removerPushAdmin, isPushSuportado, statusPermissao } from '../../services/pushNotifications';
+import { registrarPushAdmin, removerPushAdmin, isPushSuportado, statusPermissao, temTokenRegistrado } from '../../services/pushNotifications';
 
 export default function AdminConfig() {
   const { codigoAcesso, atualizarCodigoAcesso, deslogarTodasBarracas, logout, fotoFundo, usuario } = useAuth();
   const navigate = useNavigate();
   const [pushStatus, setPushStatus] = useState<NotificationPermission | 'unsupported'>(statusPermissao());
+  const [pushAtivo, setPushAtivo] = useState<boolean>(temTokenRegistrado());
   const [pushLoading, setPushLoading] = useState(false);
   const [pushMsg, setPushMsg] = useState<string | null>(null);
   const [novoCodigo, setNovoCodigo] = useState('');
@@ -326,10 +327,10 @@ export default function AdminConfig() {
                 <div className="flex-1 pr-3">
                   <span className="text-white/80 text-sm block">Notificações push</span>
                   <span className="text-white/40 text-xs">
-                    {pushStatus === 'granted' && 'Ativadas neste dispositivo'}
-                    {pushStatus === 'denied' && 'Bloqueadas — habilite nas permissões do navegador'}
-                    {pushStatus === 'default' && 'Toque para ativar'}
                     {pushStatus === 'unsupported' && 'Não suportado neste dispositivo'}
+                    {pushStatus !== 'unsupported' && pushStatus === 'denied' && 'Bloqueadas — habilite nas permissões do navegador'}
+                    {pushStatus !== 'unsupported' && pushStatus !== 'denied' && pushAtivo && 'Ativadas neste dispositivo'}
+                    {pushStatus !== 'unsupported' && pushStatus !== 'denied' && !pushAtivo && 'Toque para ativar'}
                   </span>
                 </div>
                 <button
@@ -339,13 +340,15 @@ export default function AdminConfig() {
                     setPushLoading(true);
                     setPushMsg(null);
                     try {
-                      if (pushStatus === 'granted') {
+                      if (pushAtivo) {
                         await removerPushAdmin();
                         setPushStatus(statusPermissao());
+                        setPushAtivo(temTokenRegistrado());
                         setPushMsg('Notificações desativadas neste dispositivo.');
                       } else {
                         const token = await registrarPushAdmin(usuario.id, usuario.nome || 'Admin');
                         setPushStatus(statusPermissao());
+                        setPushAtivo(temTokenRegistrado());
                         setPushMsg(token
                           ? 'Tudo certo! Este dispositivo vai receber novos pedidos.'
                           : 'Não foi possível ativar. Verifique as permissões do navegador.');
@@ -354,9 +357,9 @@ export default function AdminConfig() {
                       setPushLoading(false);
                     }
                   }}
-                  className={`w-12 h-7 rounded-full transition-colors disabled:opacity-40 ${pushStatus === 'granted' ? 'bg-green-500' : 'bg-white/20'}`}
+                  className={`w-12 h-7 rounded-full transition-colors disabled:opacity-40 ${pushAtivo ? 'bg-green-500' : 'bg-white/20'}`}
                 >
-                  <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${pushStatus === 'granted' ? 'translate-x-6' : 'translate-x-1'}`} />
+                  <div className={`w-5 h-5 rounded-full bg-white shadow transition-transform ${pushAtivo ? 'translate-x-6' : 'translate-x-1'}`} />
                 </button>
               </div>
               {pushMsg && (
