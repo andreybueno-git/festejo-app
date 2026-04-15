@@ -10,12 +10,12 @@ importScripts('https://www.gstatic.com/firebasejs/10.7.0/firebase-messaging-comp
 // Config do Firebase — precisa bater com VITE_FIREBASE_* do projeto.
 // Esses valores são públicos, tudo bem estarem aqui.
 firebase.initializeApp({
-  apiKey: 'REPLACE_FIREBASE_API_KEY',
-  authDomain: 'REPLACE_FIREBASE_AUTH_DOMAIN',
-  projectId: 'REPLACE_FIREBASE_PROJECT_ID',
-  storageBucket: 'REPLACE_FIREBASE_STORAGE_BUCKET',
-  messagingSenderId: 'REPLACE_FIREBASE_MESSAGING_SENDER_ID',
-  appId: 'REPLACE_FIREBASE_APP_ID',
+  apiKey: 'AIzaSyCz55G-TWngvZZSmFIf1UjMqbGMqorgDrc',
+  authDomain: 'festejo-app.firebaseapp.com',
+  projectId: 'festejo-app',
+  storageBucket: 'festejo-app.firebasestorage.app',
+  messagingSenderId: '940434454742',
+  appId: '1:940434454742:web:c954cc67a0a9986eef3177',
 });
 
 const messaging = firebase.messaging();
