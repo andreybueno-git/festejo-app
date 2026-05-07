@@ -1,0 +1,217 @@
+{
+  "main": {
+    "id": "96afe419551ff5d3",
+    "type": "split",
+    "children": [
+      {
+        "id": "e1037b0ad855b5a0",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "378b99b6ea57500b",
+            "type": "leaf",
+            "state": {
+              "type": "graph",
+              "state": {},
+              "icon": "lucide-git-fork",
+              "title": "Visualização de diagrama de grafo"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "dc7c413592cebeee",
+    "type": "split",
+    "children": [
+      {
+        "id": "c991dc2e77f601e4",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "0c8dbdc66c8bf8e0",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Explorador de ficheiros"
+            }
+          },
+          {
+            "id": "8496ea21eb72266a",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Procurar"
+            }
+          },
+          {
+            "id": "6b8bbcea760e1670",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Marcadores"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "b511a7f50bda5a7c",
+    "type": "split",
+    "children": [
+      {
+        "id": "f0790761373aea1c",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "9dd74623019d3132",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "Bugs & Fixes.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks para Bugs & Fixes"
+            }
+          },
+          {
+            "id": "fed5fb44fa9826f1",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "Bugs & Fixes.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Links externos de Bugs & Fixes"
+            }
+          },
+          {
+            "id": "017ce6a53703171a",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Etiquetas"
+            }
+          },
+          {
+            "id": "d222f920fcc2157d",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "Todas as propriedades"
+            }
+          },
+          {
+            "id": "2d99e4909eb5d074",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "Bugs & Fixes.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Índice de Bugs & Fixes"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Abrir Quick Switcher": false,
+      "graph:Abrir Visualização de diagrama de grafo": false,
+      "canvas:Criar novo Canvas": false,
+      "daily-notes:Abrir nota de hoje": false,
+      "templates:Inserir templates": false,
+      "command-palette:Abrir paleta de comando": false,
+      "bases:Criar nova base": false
+    }
+  },
+  "active": "378b99b6ea57500b",
+  "lastOpenFiles": [
+    "Sem título 1.base",
+    "Bugs & Fixes.md",
+    "Sem título",
+    "Services.md",
+    "Sem título.base",
+    "Modelo de Dados.md",
+    "Histórico de Decisões.md",
+    "00 - Home.md",
+    "crie uma ligação.md",
+    "Firebase/Firestore - Coleções.md",
+    "Firebase/Auth Flow.md",
+    "Deploy.md",
+    "Componentes Compartilhados.md",
+    "Módulo Barraca/BarracaNovoPedido.md",
+    "Módulo Barraca/BarracaHome.md",
+    "Módulo Barraca/BarracaLogin.md",
+    "Módulo Barraca/Barraca - Visão Geral.md",
+    "Módulo Admin/AdminConfig.md",
+    "Módulo Admin/AdminEstoque.md",
+    "Módulo Admin/AdminBarracas.md",
+    "Módulo Admin/AdminLogin.md",
+    "Módulo Admin/AdminDashboard.md",
+    "Módulo Admin/Admin - Visão Geral.md",
+    "Firebase/Push Notifications (FCM).md",
+    "03 - Estrutura de Pastas.md",
+    "02 - Stack & Arquitetura.md",
+    "Firebase/Cloud Functions.md",
+    "Firebase/Firebase - Visão Geral.md",
+    "Referências",
+    "Módulo Barraca",
+    "Módulo Admin",
+    "Firebase"
+  ]
+}

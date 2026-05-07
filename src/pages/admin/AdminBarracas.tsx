@@ -31,6 +31,7 @@ export default function AdminBarracas() {
   const [showAddEmb, setShowAddEmb] = useState(false);
   const [embSelecionada, setEmbSelecionada] = useState<Embalagem | null>(null);
   const [qtdDistribuir, setQtdDistribuir] = useState('');
+  const [buscaEmb, setBuscaEmb] = useState('');
   const [sucesso, setSucesso] = useState('');
   // Estados de "distribuir mais" — declarados no topo para evitar ordem problemática
   const [showDistribuir, setShowDistribuir] = useState<string | null>(null);
@@ -513,11 +514,13 @@ export default function AdminBarracas() {
                         setShowAddEmb(false);
                         setEmbSelecionada(null);
                         setQtdDistribuir('');
+                        setBuscaEmb('');
                         setErro('');
                       } else {
                         setShowAddEmb(true);
                         setEmbSelecionada(null);
                         setQtdDistribuir('');
+                        setBuscaEmb('');
                       }
                     }}
                     className="w-full py-4 rounded-xl bg-gradient-to-r from-blue-500/30 to-blue-600/30 border border-blue-400/40 text-white font-semibold flex items-center justify-center gap-2 hover:from-blue-500/40 hover:to-blue-600/40 transition-all shadow-lg"
@@ -581,8 +584,21 @@ export default function AdminBarracas() {
                         {embalagensDisponiveis.length === 0 ? (
                           <p className="text-white/40 text-xs text-center py-4">Todas as embalagens já foram vinculadas a esta barraca</p>
                         ) : (
+                          <>
+                            <div className="relative mb-3">
+                              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
+                              <input
+                                type="text"
+                                value={buscaEmb}
+                                onChange={(e) => setBuscaEmb(e.target.value)}
+                                placeholder="Pesquisar embalagem..."
+                                className="glass-input w-full pl-9 py-2 text-sm"
+                              />
+                            </div>
                           <div className="space-y-2 max-h-60 overflow-auto">
-                            {embalagensDisponiveis.map(emb => (
+                            {embalagensDisponiveis
+                              .filter(e => e.nome.toLowerCase().includes(buscaEmb.toLowerCase()))
+                              .map(emb => (
                               <button
                                 key={emb.id}
                                 onClick={() => selecionarEmbalagem(emb)}
@@ -600,6 +616,7 @@ export default function AdminBarracas() {
                               </button>
                             ))}
                           </div>
+                          </>
                         )}
                       </GlassCard>
                     )
